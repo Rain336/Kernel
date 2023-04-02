@@ -1,0 +1,16 @@
+[package]
+name = "platform-x86_64"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+bootloader = { path = "../../libs/bootloader" }
+acpi = { path = "../acpi" }
+common = { path = "../common" }
+memory = { path = "../memory" }
+x86_64 = "0.14"
+raw-cpuid = "10.6"
+uart_16550 = "0.2"
+bitflags = "1.3"
+log = "0.4"
+volatile = "0.4"
