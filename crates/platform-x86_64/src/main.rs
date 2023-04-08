@@ -6,23 +6,21 @@ mod counter;
 mod cpu;
 mod devices;
 mod interrupts;
-mod logging;
 
-use bootloader::BootInfo;
+use common::sync::SyncLazy;
 use core::panic::PanicInfo;
 use log::{error, info};
 use raw_cpuid::CpuId;
-use common::sync::SyncLazy;
 
 pub static CPUID: SyncLazy<CpuId> = SyncLazy::new(CpuId::new);
 
 #[no_mangle]
-extern "C" fn _start(info: &mut BootInfo) -> ! {
+extern "C" fn _start() -> ! {
     logging::init();
-    cpu::cpu_init(info.kernel_position.stack_end);
-    acpi::init(info.sdt_address);
-    counter::init();
-    info!("Counter Frequency: {}Hz", counter::frequency());
+    //cpu::cpu_init(info.kernel_position.stack_end);
+    //acpi::init(info.sdt_address);
+    //counter::init();
+    //info!("Counter Frequency: {}Hz", counter::frequency());
 
     info!("That's it for now...");
     loop {
