@@ -6,11 +6,11 @@
 //! For the actual translation, the address is split into indexes as seen on [`super::addr::VirtAddr`].
 //! These indexes are used to index into the page tables, with the highest level being the root table and going lower from there.
 //! If a table terminates early, the remaning indexes as well as the page offset are directly mapped to the physical address.
-use super::addr::PhysAddr;
 use super::size::{PageSize, Size4KiB};
-use super::MEMORY_INFO;
-use common::sync::CriticalSection;
 use bitflags::bitflags;
+use common::addr::PhysAddr;
+use common::memory::MEMORY_INFO;
+use common::sync::CriticalSection;
 use core::ops::{Index, IndexMut};
 use core::sync::atomic::{AtomicU64, Ordering};
 

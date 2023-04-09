@@ -4,9 +4,9 @@
 //! To see wich sized exist and wich are supported by wich archetecture, see [`PageSize`].
 //! Mapping works by translating a [`super::page::Page`] to a [`PhysFrame`] of the same size.
 //! Frames have to be alligned to it's size, to allow the whole physical memory to be devided into frames.
-use super::addr::PhysAddr;
 use super::size::{PageSize, Size4KiB};
 use super::AddressNotAligned;
+use common::addr::PhysAddr;
 use core::iter::FusedIterator;
 use core::marker::PhantomData;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -35,7 +35,7 @@ impl<S: PageSize> PhysFrame<S> {
     }
 
     /// Creates a frame from a physical starting address, without checking if the address is correctly aligned.
-    /// 
+    ///
     /// ## Safety
     ///
     /// This function does not check if the address is correctly aligned.

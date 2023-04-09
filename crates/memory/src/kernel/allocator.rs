@@ -1,10 +1,9 @@
 //! # The Kernel Allocator
 
-use crate::addr::VirtAddr;
-use crate::translation::{physical_to_virtual, KERNEL_OFFSET};
-
 use super::fixed;
 use super::mapping::{unmap_bytes, MemoryPermissions};
+use crate::translation::{physical_to_virtual, KERNEL_OFFSET};
+use common::addr::VirtAddr;
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, Ordering};

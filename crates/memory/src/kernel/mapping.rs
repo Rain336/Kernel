@@ -1,7 +1,8 @@
-use crate::addr::{PhysAddr, VirtAddr};
+use crate::addr::VirtAddrExt;
 use crate::page_table::{LockedPageTable, PageTableEntry, PageTableFlags, PageTranslation};
 use crate::size::{PageSize, Size1GiB, Size2MiB, Size4KiB};
 use crate::translation::{physical_to_virtual, KERNEL_PAGE_TABLE, KERNEL_PAGE_TABLE_LEVEL};
+use common::addr::{PhysAddr, VirtAddr};
 use core::ptr;
 
 const KERNEL_PAGE_TABLE_FLAGS: PageTableFlags = PageTableFlags::VALID

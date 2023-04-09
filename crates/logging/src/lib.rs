@@ -17,12 +17,11 @@ mod serial;
 mod terminal;
 mod theme;
 
+use crate::terminal::TERMINAL_OUTPUT;
 use common::sync::{CriticalSection, Spinlock};
 use core::fmt::Write;
 use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use serial::SERIAL_PORT_OUTPUT;
-
-use crate::terminal::TERMINAL_OUTPUT;
 
 /// The central [`log::Log`] implementation.
 /// There can only be one active Log implementation,

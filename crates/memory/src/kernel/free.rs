@@ -2,9 +2,9 @@
 //!
 //! The FreeTracker is a b-tree map containing blocks of memory.
 //! The key is the starting address, with the value being the ending address.
-use crate::addr::PhysAddr;
-use common::sync::SyncLazy;
 use alloc::collections::BTreeMap;
+use common::addr::PhysAddr;
+use common::sync::SyncLazy;
 use core::cmp::Ordering;
 use spinning_top::Spinlock;
 

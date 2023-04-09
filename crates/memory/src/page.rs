@@ -4,10 +4,10 @@
 //! To see wich sized exist and wich are supported by wich archetecture, see [`PageSize`].
 //! Mapping works by translating a [`Page`] to a [`super::frame::PhysFrame`] of the same size.
 //! Pages have to be alligned to it's size, to allow the whole virtual memory to be devided into pages.
-use super::addr::VirtAddr;
 use super::page_table::{PageTableIndex, PageTableLevel};
 use super::size::{PageSize, Size4KiB};
 use super::AddressNotAligned;
+use common::addr::VirtAddr;
 use core::iter::FusedIterator;
 use core::marker::PhantomData;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -62,7 +62,10 @@ impl<S: PageSize> Page<S> {
 
     /// Returns the 9-bit index for the given [`PageTableLevel`].
     pub const fn page_table_index(self, level: PageTableLevel) -> PageTableIndex {
-        self.start_address.page_table_index(level)
+        // should be just self.start_address.page_table_index(level)
+        PageTableIndex::new_truncate(
+            (self.start_address.as_u64() >> 12 >> ((level.as_u8() - 1) * 9)) as u16,
+        )
     }
 
     /// Creates a range of pages from start up to but not including end.

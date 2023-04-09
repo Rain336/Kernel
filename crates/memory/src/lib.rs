@@ -1,6 +1,6 @@
 //! # The Memory Subsystem
 //!
-//! - [`addr`] Contains the [`addr::VirtAddr`] and [`addr::PhysAddr`] structs.
+//! - [`addr`] Contains exntesions to the address types from [`common::addr`].
 //! - [`frame`] Contains the [`frame::PhysFrame`] struct to denote a mappable region of physical memory.
 //! - [`kernel`] Contains memory management constructs used by the kernel.
 //! - [`page`] Contains the [`page::Page`] struct to denote a mappable region of virtual memory.
@@ -12,8 +12,6 @@
 
 extern crate alloc;
 
-use common::sync::SyncLazy;
-
 pub mod addr;
 pub mod frame;
 pub mod kernel;
@@ -23,12 +21,3 @@ pub mod size;
 pub mod translation;
 
 pub struct AddressNotAligned;
-
-struct MemoryInfo {
-    virtual_address_bits: u64,
-    physical_address_bits: u64,
-    page_table_entry_address_mask: u64,
-    highest_page_table_level: u8,
-}
-
-static MEMORY_INFO: SyncLazy<MemoryInfo> = SyncLazy::new(|| todo!());

@@ -193,7 +193,7 @@ impl TerminalOutput {
         // if we reached the end of the screen...
         if self.column == self.max_columns {
             if let Some(buffer) = &mut self.buffer {
-                let start = self.pitch as usize;
+                let start = self.pitch as usize + LINE_SPACEING;
                 let end = (self.max_columns - 1) * start;
 
                 // ...then we need to copy everything up in the buffer

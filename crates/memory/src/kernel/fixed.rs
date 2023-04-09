@@ -5,9 +5,9 @@
 //! The page is segmented into flixed size blocks based on the size class.
 //! The blocks are tracked using an atomic bitmap.
 
-use crate::addr::VirtAddr;
 use crate::translation::physical_to_virtual;
 use alloc::boxed::Box;
+use common::addr::VirtAddr;
 use common::sync::CriticalSection;
 use core::ptr;
 use core::sync::atomic::{AtomicPtr, AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering};

@@ -1,5 +1,6 @@
-use super::addr::{PhysAddr, VirtAddr};
 use super::page_table::{LockedPageTable, PageTable, PageTableLevel, PageTranslation};
+use crate::addr::VirtAddrExt;
+use common::addr::{PhysAddr, VirtAddr};
 use common::sync::SyncLazy;
 
 pub const PHYSICAL_OFFSET: VirtAddr = unsafe { VirtAddr::new_unsafe(0xFFFFFF0000000000) };

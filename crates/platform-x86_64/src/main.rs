@@ -18,7 +18,7 @@ pub static CPUID: SyncLazy<CpuId> = SyncLazy::new(CpuId::new);
 extern "C" fn _start() -> ! {
     logging::init();
     //cpu::cpu_init(info.kernel_position.stack_end);
-    //acpi::init(info.sdt_address);
+    //acpi::init();
     //counter::init();
     //info!("Counter Frequency: {}Hz", counter::frequency());
 
