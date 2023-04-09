@@ -143,6 +143,13 @@ impl From<x86_64::addr::VirtAddr> for VirtAddr {
     }
 }
 
+#[cfg(target_arch = "x86_64")]
+impl From<VirtAddr> for x86_64::addr::VirtAddr {
+    fn from(value: VirtAddr) -> Self {
+        unsafe { x86_64::addr::VirtAddr::new_unsafe(value.as_u64()) }
+    }
+}
+
 impl Add<VirtAddr> for VirtAddr {
     type Output = VirtAddr;
 
@@ -353,6 +360,13 @@ impl From<PhysAddr> for u64 {
 impl From<x86_64::addr::PhysAddr> for PhysAddr {
     fn from(value: x86_64::addr::PhysAddr) -> Self {
         PhysAddr(value.as_u64())
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
+impl From<PhysAddr> for x86_64::addr::PhysAddr {
+    fn from(value: PhysAddr) -> Self {
+        unsafe { x86_64::addr::PhysAddr::new_unsafe(value.as_u64()) }
     }
 }
 

@@ -1,13 +1,10 @@
-use log::debug;
 use common::sync::SyncOnceCell;
+use log::debug;
 use x86_64::instructions::tables::load_tss;
 use x86_64::registers::segmentation::{Segment, CS};
 use x86_64::structures::gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector};
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::{PrivilegeLevel, VirtAddr};
-
-const SECOND_STACK_SIZE: usize = 4096 * 4;
-static SECOND_STACK: [u8; SECOND_STACK_SIZE] = [0; SECOND_STACK_SIZE];
 
 static TASK_STATE_SEGMENT: SyncOnceCell<TaskStateSegment> = SyncOnceCell::new();
 
@@ -19,11 +16,11 @@ static KERNEL_CODE_SEGMENT: SegmentSelector = SegmentSelector::new(1, PrivilegeL
 //static USER_DATA_SEGMENT: SegmentSelector = SegmentSelector::new(4, PrivilegeLevel::Ring3);
 static TSS_SEGMENT: SegmentSelector = SegmentSelector::new(5, PrivilegeLevel::Ring0);
 
-pub fn load(stack_end: u64) {
+pub fn load(primary_stack: u64, secondary_stack: u64) {
     let tss = TASK_STATE_SEGMENT.get_or_init(|| {
         let mut tss = TaskStateSegment::new();
-        tss.interrupt_stack_table[0] = VirtAddr::new_truncate(SECOND_STACK.as_ptr() as u64 + SECOND_STACK_SIZE as u64);
-        tss.privilege_stack_table[0] = VirtAddr::new_truncate(stack_end);
+        tss.interrupt_stack_table[0] = VirtAddr::new_truncate(secondary_stack);
+        tss.privilege_stack_table[0] = VirtAddr::new_truncate(primary_stack);
         tss
     });
 

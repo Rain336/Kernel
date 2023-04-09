@@ -138,7 +138,7 @@ fn load_control_registers() {
     }
     #[cfg(not(debug_assertions))]
     unsafe {
-        Cr4::write_raw(*CONTROL_REGISTER_4)
+        Cr4::write_raw(CONTROL_REGISTER_4.bits())
     }
 }
 
@@ -183,6 +183,6 @@ fn load_extended_control_registers() {
     }
     #[cfg(not(debug_assertions))]
     unsafe {
-        XCr0::write_raw(*EXTENDED_CONTROL_REGISTER)
+        XCr0::write_raw(EXTENDED_CONTROL_REGISTER.bits())
     }
 }

@@ -6,6 +6,7 @@ mod counter;
 mod cpu;
 mod devices;
 mod interrupts;
+mod stack;
 
 use common::sync::SyncLazy;
 use core::panic::PanicInfo;
@@ -14,10 +15,12 @@ use raw_cpuid::CpuId;
 
 pub static CPUID: SyncLazy<CpuId> = SyncLazy::new(CpuId::new);
 
-#[no_mangle]
-extern "C" fn _start() -> ! {
+fn kernel_main() -> ! {
     logging::init();
-    //cpu::cpu_init(info.kernel_position.stack_end);
+    cpu::cpu_init(
+        stack::get_bootstrap_primary_stack(),
+        stack::get_bootstrap_secondary_stack(),
+    );
     //acpi::init();
     //counter::init();
     //info!("Counter Frequency: {}Hz", counter::frequency());
