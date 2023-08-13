@@ -4,12 +4,10 @@
 //! The key is the starting address, with the value being the ending address.
 use alloc::collections::BTreeMap;
 use common::addr::PhysAddr;
-use common::sync::SyncLazy;
 use core::cmp::Ordering;
 use spinning_top::Spinlock;
 
-static FREE_TRACKER: SyncLazy<Spinlock<BTreeMap<PhysAddr, PhysAddr>>> =
-    SyncLazy::new(|| Spinlock::new(BTreeMap::new()));
+static FREE_TRACKER: Spinlock<BTreeMap<PhysAddr, PhysAddr>> = Spinlock::new(BTreeMap::new());
 
 /// Tries to allocate a single 4KiB page from the FreeTracker, if possible.
 /// Returns `None` when the free tracker is out of memory

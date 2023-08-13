@@ -1,3 +1,5 @@
+#![allow(clippy::unusual_byte_groupings)]
+
 use crate::addr::{PhysAddr, VirtAddr};
 use crate::sync::SyncLazy;
 use core::sync::atomic::{AtomicBool, Ordering};
@@ -17,13 +19,17 @@ pub fn set_initialized() {
 }
 
 /// The start of the kernel's direct mapped memory area.
-pub const DIRECT_MAPPING_START: VirtAddr = unsafe { VirtAddr::new_unsafe(0xFFFFFF0000000000) };
+pub const DIRECT_MAPPING_START: VirtAddr = VirtAddr::new_const(0o776_000_000_000_0000);
 
 /// Size of the kernel's direct mapped memory area, in bytes.
 /// Guaranteed to be a multiple of 1 GiB.
 pub const DIRECT_MAPPING_SIZE: u64 = 4 * 1024 * 1024 * 1024;
 
-/// Converts a physical address into a virtual adress, using the direct mapped memory area.
+/// The start of the kernel's own memory area.
+/// THis is used for dynamic memory allocation as well as the kernel's code itself.
+pub const KERNEL_SPACE_START: VirtAddr = VirtAddr::new_const(0o777_000_000_000_0000);
+
+/// Converts a physical address into a virtual address, using the direct mapped memory area.
 pub fn physical_to_virtual(phys: PhysAddr) -> VirtAddr {
     debug_assert!(is_initialized(), "The memory subsystem needs to be initialized, before the direct mapped memory area can be used.");
     assert!(

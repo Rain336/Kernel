@@ -1,19 +1,19 @@
 /// # Size Module
 ///
-/// The size module contains the diffrent vaild sizes for [`super::page::Page`] and [`super::frame::PhysFrame`].
-/// The module exports one trait, [`PageSize`] with is implemented by different vaild sizes.
+/// The size module contains the different valid sizes for [`crate::page::Page`] and [`crate::frame::PhysFrame`].
+/// The module exports one trait, [`PageSize`] with is implemented by different valid sizes.
 
 /// A trait implemented by zero-sized enums to represent a mappable page and frame size.
 pub trait PageSize: Ord + Copy {
     /// Returns the size in bytes.
     const SIZE: u64;
 
-    /// Rewturns whenever the size is supported on the current archetecture.
+    /// Returns whenever the size is supported on the current architecture.
     fn is_supported() -> bool;
 }
 
-/// A page size type for 4 kibibytes.
-/// This size is supported by all current achetectures (x86_64, AArch64, riscv64).
+/// A page size type for 4 KiB.
+/// This size is supported by all current architectures (x86_64, AArch64, riscv64).
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Size4KiB {}
 
@@ -25,8 +25,8 @@ impl PageSize for Size4KiB {
     }
 }
 
-/// A page size type for 2 mebibytes.
-/// This size is supported by all current achetectures (x86_64, AArch64, riscv64).
+/// A page size type for 2 MiB.
+/// This size is supported by all current architectures (x86_64, AArch64, riscv64).
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Size2MiB {}
 
@@ -38,8 +38,8 @@ impl PageSize for Size2MiB {
     }
 }
 
-/// A page size type for 1 gibibyte.
-/// This size is supported by all current achetectures (x86_64, AArch64, riscv64).
+/// A page size type for 1 GiB.
+/// This size is supported by all current architectures (x86_64, AArch64, riscv64).
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Size1GiB {}
 
@@ -51,7 +51,7 @@ impl PageSize for Size1GiB {
     }
 }
 
-/// A page size type for 512 gibibytes.
+/// A page size type for 512 GiB.
 /// This size is currently only supported by the riscv64 architecture.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Size512GiB {}

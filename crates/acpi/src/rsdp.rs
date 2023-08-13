@@ -4,17 +4,18 @@ use core::mem;
 use core::slice;
 use log::warn;
 
-/// Structure contianing the pointer to the Root System Descriptor Table.
+/// Structure containing the pointer to the Root System Descriptor Table.
+#[repr(C, packed)]
 struct RootSystemDescriptionPointer {
-    signature: [u8; 8],
-    checksum: u8,
-    oedm_id: [u8; 6],
+    _signature: [u8; 8],
+    _checksum: u8,
+    _oedm_id: [u8; 6],
     revision: u8,
     rsdt_address: u32,
 }
 
 impl RootSystemDescriptionPointer {
-    /// Validates the structure, returns true if vaild.
+    /// Validates the structure, returns true if valid.
     fn validate(&self) -> bool {
         let bytes = unsafe {
             slice::from_raw_parts(
@@ -28,18 +29,19 @@ impl RootSystemDescriptionPointer {
     }
 }
 
-/// Structure contianing the pointer to the Extended System Descriptor Table.
+/// Structure containing the pointer to the Extended System Descriptor Table.
 /// Used starting ACPI 2.0+.
+#[repr(C, packed)]
 struct RootSystemDescriptionPointer2 {
-    base: RootSystemDescriptionPointer,
+    _base: RootSystemDescriptionPointer,
     length: u32,
     xsdt_address: u64,
-    extended_checksum: u8,
-    reserved: [u8; 3],
+    _extended_checksum: u8,
+    _reserved: [u8; 3],
 }
 
 impl RootSystemDescriptionPointer2 {
-    /// Validates the structure, returns true if vaild.
+    /// Validates the structure, returns true if valid.
     fn validate(&self) -> bool {
         let bytes =
             unsafe { slice::from_raw_parts(self as *const _ as *const u8, self.length as usize) };

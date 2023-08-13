@@ -1,8 +1,8 @@
 //! # Advanced Configuration and Power Interface (ACPI)
 //!
 //! ACPI is a standard developed originally by Intel, now by the UEFI Forum, to enumerate and configure devices installed in a system.
-//! The microdragon kernel tries to use as little of it as posible, since most of it should be handled by userspace services.
-//! In adition it's a very big standard even including a custom programming language called AML.
+//! The microdragon kernel tries to use as little of it as possible, since most of it should be handled by userspace services.
+//! In addition it's a very big standard even including a custom programming language called AML.
 //!
 #![no_std]
 
@@ -12,6 +12,7 @@ mod rsdp;
 mod table;
 mod utils;
 
+use common::addr::VirtAddr;
 pub use header::*;
 pub use hpet::*;
 pub use table::*;
@@ -26,19 +27,24 @@ use limine::LimineRsdpRequest;
 use log::{debug, info, log_enabled, warn, Level};
 
 /// Signature of the Extended System Descriptor Table used in ACPI 2.0+.
-/// It uses 64-bit pointers, so we have to detect that and choose acordingly.
+/// It uses 64-bit pointers, so we have to detect that and choose accordingly.
 const EXTENDED_SIGNATURE: &[u8] = b"XSDT";
 
 /// Request to the bootloader to give us a pointer to the Root System Description Pointer.
 static RSDP_REQUEST: LimineRsdpRequest = LimineRsdpRequest::new(0);
 
-/// Static referance to the (Extended) System Descriptor Table.
+/// Static reference to the (Extended) System Descriptor Table.
 /// This is used by [`find_table`] to iterate though all available ACPI tables.
-static SYSTEM_DESCRIPTION_TABLE: SyncOnceCell<&'static AcpiTableHeader> = SyncOnceCell::new();
+static SYSTEM_DESCRIPTOR_TABLE: SyncOnceCell<&'static AcpiTableHeader> = SyncOnceCell::new();
 
 /// Initializes the crate, by requesting the root system description pointer from the bootloader.
 /// This is needed for [`find_table`] to function.
 pub fn init() {
+    if SYSTEM_DESCRIPTOR_TABLE.is_initialized() {
+        warn!("ACPI Kernel Module already initialized");
+        return;
+    }
+
     let Some(response) = RSDP_REQUEST.get_response().get() else {
         info!("ACPI not available");
         return;
@@ -55,7 +61,7 @@ pub fn init() {
 
     let sdp = unsafe { &*physical_to_virtual(address).as_ptr::<AcpiTableHeader>() };
     if !sdp.validate() {
-        warn!("ACPI System Description Table corrupted? Checksum didn't match");
+        warn!("ACPI System Descriptor Table corrupted? Checksum didn't match");
         return;
     }
 
@@ -74,20 +80,20 @@ pub fn init() {
         );
     }
 
-    SYSTEM_DESCRIPTION_TABLE.get_or_init(|| sdp);
+    SYSTEM_DESCRIPTOR_TABLE.get_or_init(|| sdp);
 }
 
 /// Tries to find the ACPI Table `T`.
 /// This function only works if [`init`] was called before, else it will always return `None`.
 pub fn find_table<T: AcpiTable>() -> Option<&'static T> {
-    let sdp = SYSTEM_DESCRIPTION_TABLE.get()?;
-    let start = ((*sdp) as *const _ as usize) + mem::size_of::<AcpiTableHeader>();
-    let length = sdp.length as usize - mem::size_of::<AcpiTableHeader>();
+    let sdt = *SYSTEM_DESCRIPTOR_TABLE.get()?;
+    let start = VirtAddr::from(sdt as *const _) + mem::size_of::<AcpiTableHeader>();
+    let length = sdt.length as usize - mem::size_of::<AcpiTableHeader>();
     debug!("SDP Entry List Start: {:#x} Size: {}", start, length);
 
-    let table = if sdp.signature == EXTENDED_SIGNATURE {
+    let table = if sdt.signature == EXTENDED_SIGNATURE {
         let count = length / mem::size_of::<u64>();
-        let tables = unsafe { slice::from_raw_parts(start as *const u64, count) };
+        let tables = unsafe { slice::from_raw_parts(start.as_ptr::<u64>(), count) };
 
         tables.iter().find_map(|x| {
             let table = PhysAddr::new_truncate(*x);
@@ -101,7 +107,7 @@ pub fn find_table<T: AcpiTable>() -> Option<&'static T> {
         })?
     } else {
         let count = length / mem::size_of::<u32>();
-        let tables = unsafe { slice::from_raw_parts(start as *const u32, count) };
+        let tables = unsafe { slice::from_raw_parts(start.as_ptr::<u32>(), count) };
 
         tables.iter().find_map(|x| {
             let table = PhysAddr::new_truncate(*x as u64);

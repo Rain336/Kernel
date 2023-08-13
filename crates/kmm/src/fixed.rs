@@ -2,12 +2,12 @@
 //!
 //! This module contains a fixed size allocator with four size classes 64, 128, 256 and 512 bytes.
 //! Each size class has it's own chain of pages that that lazily adds new pages onto itself when needed.
-//! The page is segmented into flixed size blocks based on the size class.
+//! The page is segmented into fixed size blocks based on the size class.
 //! The blocks are tracked using an atomic bitmap.
 
-use crate::translation::physical_to_virtual;
 use alloc::boxed::Box;
 use common::addr::VirtAddr;
+use common::memory::physical_to_virtual;
 use common::sync::CriticalSection;
 use core::ptr;
 use core::sync::atomic::{AtomicPtr, AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering};
@@ -18,9 +18,9 @@ const UPDATING: usize = usize::MAX;
 /// Bookkeeping struct for one page of blocks.
 pub struct FixedAllocator<T> {
     /// Pointer to the page.
-    page: *const u8,
+    page: *mut u8,
 
-    /// Bitmap to keep track of wich blocks are in use.
+    /// Bitmap to keep track of which blocks are in use.
     bitmap: T,
 
     /// Pointer to the next page's bookkeeping struct.
@@ -48,7 +48,7 @@ impl<T> FixedAllocator<T> {
             }
         }
 
-        // If the relaxed load worked or the bookkeeping struct finished initilizing, we return next as a valid referance.
+        // If the relaxed load worked or the bookkeeping struct finished initializing, we return next as a valid reference.
         Some(unsafe { &*next })
     }
 }
@@ -61,7 +61,7 @@ macro_rules! fixed_allocator {
         impl FixedAllocator<$atomic> {
             /// Creates a bookkeeping struct for the given page.
             /// The page is assumed to be 4KiB in size.
-            pub const fn new(page: *const u8) -> Self {
+            pub const fn new(page: *mut u8) -> Self {
                 FixedAllocator {
                     page,
                     bitmap: <$atomic>::new(0),
@@ -89,12 +89,12 @@ macro_rules! fixed_allocator {
                         Ordering::AcqRel,
                         Ordering::Acquire,
                     ) {
-                        // ...try to compare_exchage it into place.
+                        // ...try to compare_exchange it into place.
                         Ok(_) => {
-                            // If the compare_exchage worked, we got the block and can return a pointer to it.
-                            return unsafe { self.page.add(offset as usize * $size) as *mut _ };
+                            // If the compare_exchange worked, we got the block and can return a pointer to it.
+                            return unsafe { self.page.add(offset as usize * $size) };
                         }
-                        Err(err) => current = err, // Otherwies we update our current bitmap and try to find a new block.
+                        Err(err) => current = err, // Otherwise we update our current bitmap and try to find a new block.
                     }
                 }
             }
@@ -137,7 +137,7 @@ macro_rules! fixed_allocator {
                     // We try to set the next pointer to UPDATING (lock the pointer)
                     Ok(_) => {
                         // If we managed to lock it, we have to allocate a page.
-                        let page = allocate_page().as_ptr::<u8>();
+                        let page = allocate_page().as_mut_ptr::<u8>();
 
                         // Next we have to allocate the bookkeeping struct with a bit of a twist.
                         let fixed = if $bits == 64 {
@@ -177,7 +177,7 @@ macro_rules! fixed_allocator {
                             current = self.next.load(Ordering::Acquire);
                         }
 
-                        // Finaly we return the bookkeeping struct that got created.
+                        // Finally we return the bookkeeping struct that got created.
                         unsafe { &*current }
                     }
                 }
@@ -191,21 +191,21 @@ fixed_allocator!(AtomicU32, 128, 32);
 fixed_allocator!(AtomicU16, 256, 16);
 fixed_allocator!(AtomicU8, 512, 8);
 
-pub static FIXED_64_BLOCK: [u8; 4096] = [0; 4096];
+static mut FIXED_64_BLOCK: [u8; 4096] = [0; 4096];
 pub static FIXED_64: FixedAllocator<AtomicU64> =
-    FixedAllocator::<AtomicU64>::new(FIXED_64_BLOCK.as_ptr());
+    FixedAllocator::<AtomicU64>::new(unsafe { FIXED_64_BLOCK.as_mut_ptr() });
 
-pub static FIXED_128_BLOCK: [u8; 4096] = [0; 4096];
+static mut FIXED_128_BLOCK: [u8; 4096] = [0; 4096];
 pub static FIXED_128: FixedAllocator<AtomicU32> =
-    FixedAllocator::<AtomicU32>::new(FIXED_128_BLOCK.as_ptr());
+    FixedAllocator::<AtomicU32>::new(unsafe { FIXED_128_BLOCK.as_mut_ptr() });
 
-pub static FIXED_256_BLOCK: [u8; 4096] = [0; 4096];
+static mut FIXED_256_BLOCK: [u8; 4096] = [0; 4096];
 pub static FIXED_256: FixedAllocator<AtomicU16> =
-    FixedAllocator::<AtomicU16>::new(FIXED_256_BLOCK.as_ptr());
+    FixedAllocator::<AtomicU16>::new(unsafe { FIXED_256_BLOCK.as_mut_ptr() });
 
-pub static FIXED_512_BLOCK: [u8; 4096] = [0; 4096];
+static mut FIXED_512_BLOCK: [u8; 4096] = [0; 4096];
 pub static FIXED_512: FixedAllocator<AtomicU8> =
-    FixedAllocator::<AtomicU8>::new(FIXED_512_BLOCK.as_ptr());
+    FixedAllocator::<AtomicU8>::new(unsafe { FIXED_512_BLOCK.as_mut_ptr() });
 
 fn allocate_page() -> VirtAddr {
     let page = super::free::allocate_page().unwrap();

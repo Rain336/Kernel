@@ -1,11 +1,11 @@
 //! # Address Module
 //!
-//! A kernel need to work with two kinds of adresses, virtual and physical.
-//! A virtual address is the address used by processor for load/store instrcutions as well as almost all other constructs wich access memory.
+//! A kernel need to work with two kinds of addresses, virtual and physical.
+//! A virtual address is the address used by processor for load/store instructions as well as almost all other constructs which access memory.
 //! A physical address is the address send to the actual memory chip, meaning a virtual to physical translation has to happen.
-//! This translation is done by the memory management unit (MMU), wich implies certan restrictions on physical and virtual addresses.
-//! For this reason the [`PhysAddr`] and [`VirtAddr`] structs exist and enfoce a well formed physical / virtual address.
-//! See thier respective docs to find out about the implied restrictions.
+//! This translation is done by the memory management unit (MMU), which implies certain restrictions on physical and virtual addresses.
+//! For this reason the [`PhysAddr`] and [`VirtAddr`] structs exist and enforce a well formed physical / virtual address.
+//! See their respective docs to find out about the implied restrictions.
 use crate::memory::MEMORY_INFO;
 use core::fmt::{Binary, LowerHex, Octal, Pointer, UpperHex};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -14,13 +14,13 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 #[derive(Debug)]
 pub struct VirtAddrNotValid(pub u64);
 
-/// A virtual memory adress
+/// A virtual memory address
 /// Virtual memory addresses are always 64-bit, but segmented into 9-bit indexes, starting after the page offset.
-/// How many of these indexes are in used depend on the archetecture,
-/// with all currently supported achetecutres (x86_64, AArch64, riscv64) supporting at least 4 levels.
+/// How many of these indexes are in used depend on the architecture,
+/// with all currently supported architectures (x86_64, AArch64, riscv64) supporting at least 4 levels.
 /// All architectures also support an optional 5th level based on feature registers.
 /// In addition the the 9-bit indexes, a 12-bit page offset is always placed at the lowest bits of the address.
-/// All bits outside the 9-bit indexes and 12-bit page offset are sign extended, meaning they must have the same bits as the higest valid bit.
+/// All bits outside the 9-bit indexes and 12-bit page offset are sign extended, meaning they must have the same bits as the highest valid bit.
 /// Here an example of a level 5 address:
 ///
 /// +---------+-----------+-----------+-----------+-----------+-----------+--------------+
@@ -34,17 +34,22 @@ pub struct VirtAddrNotValid(pub u64);
 pub struct VirtAddr(u64);
 
 impl VirtAddr {
-    /// Creates a virtual address from a [`u64`], panics when the adress is not well-formed for the current architecture.
+    /// Creates a virtual address from a [`u64`], panics when the address is not well-formed for the current architecture.
     pub fn new(addr: u64) -> Self {
         addr.try_into().expect(
             "Address passed to VirtAddr::new must not contain data in the sign extended bits",
         )
     }
 
-    /// Creates a virtual address from a [`u64`], truncating the sign extend to work on the current architectire.
+    /// Creates a virtual address from a [`u64`], truncating the sign extend to work on the current architecture.
     pub fn new_truncate(addr: u64) -> Self {
         let bits = 64 - MEMORY_INFO.virtual_address_bits;
         VirtAddr(((addr << bits) as i64 >> bits) as u64)
+    }
+
+    /// Creates a virtual address from a [`u64`], truncating the sign extend to work on the lowest common denominator architecture.
+    pub const fn new_const(addr: u64) -> Self {
+        VirtAddr(((addr << 17) as i64 >> 17) as u64)
     }
 
     /// Create a virtual address from a [`u64`], with out checking if it's a well formed address for the current architecture.
@@ -269,8 +274,8 @@ impl UpperHex for VirtAddr {
 pub struct PhysAddrNotValid(pub u64);
 
 /// A physical memory address
-/// Physical adress are always 64 bits long, but not all bits are in use.
-/// How many bits are in use is arhitecture and mmu dependant, but all currently supported architectures at least supporting 52-bits.
+/// Physical address are always 64 bits long, but not all bits are in use.
+/// How many bits are in use is architecture and mmu dependant, but all currently supported architectures at least supporting 52-bits.
 /// All unused bits have to be zero.
 /// An example of a 52-bit address:
 ///
@@ -290,7 +295,7 @@ impl PhysAddr {
             .expect("Address passed to PhysAddr::new must not contain data in the ignored bits")
     }
 
-    /// Creates a physical address forma [`u64`], truncating the unused start of the address to work on the current architectire.
+    /// Creates a physical address forma [`u64`], truncating the unused start of the address to work on the current architecture.
     pub fn new_truncate(addr: u64) -> Self {
         let max = 1 << MEMORY_INFO.physical_address_bits;
         PhysAddr(addr % max)

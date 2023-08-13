@@ -1,21 +1,21 @@
 use crate::timer::HpetTimer;
 
 /// A comparator is value that is compared against the counter register and if it matches, an interrupt is generated.
-/// 
+///
 /// ## Periodic vs One-shot Mode
 /// The comparator can run in either periodic or one-shot mode.
 /// In one-shot mode, an interrupt is triggered once [`value`] is reached and nothing more.
-/// In periodic mode, every time [`values`] is reached, it is increased by the amount last written to it.
-/// Periodic mode is not implemented for every comparator. Use [`supports_periodic_mode`] to see it it's avilable.
-/// 
-/// ### Example: 
+/// In periodic mode, every time [`value`] is reached, it is increased by the amount last written to it.
+/// Periodic mode is not implemented for every comparator. Use [`supports_periodic_mode`] to see it it's available.
+///
+/// ### Example:
 /// One-shot mode:
 /// ```text
 /// set_value(123)
 ///     ~~~ Interrupt Happens at 123 ~~~
 /// value() == 123
 /// ```
-/// 
+///
 /// Periodic mode:
 /// ```text
 /// set_value(123)
@@ -24,22 +24,22 @@ use crate::timer::HpetTimer;
 ///     ~~~ Interrupt Happens at 246 ~~~
 /// value() == 369
 /// ```
-/// 
+///
 /// ## Comparator Size
 /// A comparator can either be 32-bit or 64-bit.
 /// In both cases, [`value`] will be 8 bytes long, but a 32-bit comparator only compares the lower 32 bits of [`value`] against the counter.
-/// 
+///
 /// ## Interrupt Routing
 /// The interrupts generated from a comparator can either be routed through an IOAPIC or using FSB Messaging.
 /// FSB Messaging takes priority over I/O routing, but is also not required to be implemented, so check using [`supports_fsb_interrupt`].
 /// For I/O routing, only the interrupts specified by [`supported_io_interrupt_routes`] can be used.
-pub struct HpetComparator {
-    timer: &'static mut HpetTimer,
-    index: u8
+pub struct HpetComparator<'a> {
+    timer: &'a mut HpetTimer,
+    index: u8,
 }
 
-impl HpetComparator {
-    pub(crate) fn new(timer: &'static mut HpetTimer, index: u8) -> Self {
+impl<'a> HpetComparator<'a> {
+    pub(crate) fn new(timer: &'a mut HpetTimer, index: u8) -> Self {
         HpetComparator { timer, index }
     }
 
@@ -49,7 +49,7 @@ impl HpetComparator {
     }
 
     /// Returns whenever the interrupts are level-triggered or edge-triggered.
-    /// TODO: Example with the differance
+    /// TODO: Example with the difference
     pub fn is_level_triggered(&self) -> bool {
         (self.timer.configuration_and_capability_register() & 0b10) == 0b10
     }
@@ -115,7 +115,7 @@ impl HpetComparator {
 
     /// Returns whenever this 64-bit comparator is in 32-bit mode.
     /// A 64-bit comparator in 32-bit mode acts like a 32-bit counter. See [`is_64_bit`].
-    /// 
+    ///
     /// ## Note
     /// A 32-bit comparator (`is_64_bit() == false`) returns false for this function,
     /// since it's not in 32-bit **mode**, but an actual 32-bit comparator.
@@ -146,7 +146,8 @@ impl HpetComparator {
     /// Can only be one of [`supported_io_interrupt_routes`].
     /// Will be ignored if [`is_fsb_interrupt_enabled`].
     pub fn set_io_interrupt_route(&mut self, value: u8) {
-        let value = self.timer.configuration_and_capability_register() | ((value as u64 & 0b11111) << 9);
+        let value =
+            self.timer.configuration_and_capability_register() | ((value as u64 & 0b11111) << 9);
         self.timer.set_configuration_and_capability_register(value)
     }
 
@@ -154,7 +155,8 @@ impl HpetComparator {
     /// FSB interrupt routing overrides the standard I/O interrupt routing.
     /// Check [`supports_fsb_interrupt`] before using. It has no effect otherwise.
     pub fn is_fsb_interrupt_enabled(&self) -> bool {
-        (self.timer.configuration_and_capability_register() & 0b100000000000000) == 0b100000000000000
+        (self.timer.configuration_and_capability_register() & 0b100000000000000)
+            == 0b100000000000000
     }
 
     /// Enables FSB interrupt routing for this comparator.
@@ -179,7 +181,8 @@ impl HpetComparator {
 
     /// Returns whenever FSB interrupt routing is supported by this comparator.
     pub fn supports_fsb_interrupt(&self) -> bool {
-        (self.timer.configuration_and_capability_register() & 0b1000000000000000) == 0b1000000000000000
+        (self.timer.configuration_and_capability_register() & 0b1000000000000000)
+            == 0b1000000000000000
     }
 
     /// Returns a bitmask of which interrupts of the IOAPIC this comparator can route to.
@@ -199,26 +202,32 @@ impl HpetComparator {
         self.timer.set_comparator_value_register(value)
     }
 
+    /// Gets the address to write to on an interrupt.
     pub fn fsb_interrupt_address(&self) -> u32 {
         (self.timer.fsb_interrupt_route_register() >> 32) as u32
     }
 
+    /// Sets the address to write to on an interrupt.
     pub fn set_fsb_interrupt_address(&mut self, value: u32) {
-        let value = (self.timer.fsb_interrupt_route_register() as u32) as u64 | ((value as u64) << 32);
+        let value =
+            (self.timer.fsb_interrupt_route_register() as u32) as u64 | ((value as u64) << 32);
         self.timer.set_fsb_interrupt_route_register(value)
     }
 
+    /// Gets the value to write on an interrupt.
     pub fn fsb_interrupt_value(&self) -> u32 {
         self.timer.fsb_interrupt_route_register() as u32
     }
 
+    /// Sets the value to write on an interrupt.
     pub fn set_fsb_interrupt_value(&mut self, value: u32) {
-        let value = (self.timer.fsb_interrupt_route_register() & (!(u32::MAX as u64))) | value as u64;
+        let value =
+            (self.timer.fsb_interrupt_route_register() & (!(u32::MAX as u64))) | value as u64;
         self.timer.set_fsb_interrupt_route_register(value)
     }
 }
 
-impl Drop for HpetComparator {
+impl<'a> Drop for HpetComparator<'a> {
     fn drop(&mut self) {
         self.disable();
         self.set_value(u64::MAX)

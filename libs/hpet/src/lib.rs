@@ -3,10 +3,10 @@
 //! The HPET has either a 32- or 64-Bit Counter Register, that is incremented at a fixed rate.
 //!
 //! ## Legacy Replacement Mode
-//! The HPET can be used to emulate the PIT and RTC Timer using legacy replacment mode, which is done by a lot of firmwares.
-//! This mode uses up the first two comparators of the HPET for PIT and RTC Timer repectivly.
+//! The HPET can be used to emulate the PIT and RTC Timer using legacy replacement mode, which is done by a lot of firmwares.
+//! This mode uses up the first two comparators of the HPET for PIT and RTC Timer respectively.
 //! Even though these comparators can be adjusted, this library restrains from doing so.
-//! Legacy replacment mode can be disabled though.
+//! Legacy replacement mode can be disabled though.
 #![no_std]
 #![warn(missing_docs)]
 
@@ -20,8 +20,8 @@ use core::slice;
 pub use comparator::HpetComparator;
 
 /// This is the main data type of this library,
-/// keeping a referance to the registers of the HPET and it's comparators.
-/// As well as having a mechanisem to lend and return comparators.
+/// keeping a reference to the registers of the HPET and it's comparators.
+/// As well as having a mechanism to lend and return comparators.
 pub struct HighPrecisionEventTimer {
     registers: &'static mut registers::HpetRegisters,
     timers: &'static mut [timer::HpetTimer],
@@ -30,7 +30,7 @@ pub struct HighPrecisionEventTimer {
 
 impl HighPrecisionEventTimer {
     /// Creates a new HPET management struct with the registers at the given address.
-    /// You can chose whenever to enable Legacy Replacement Mode, if avilable.
+    /// You can chose whenever to enable Legacy Replacement Mode, if available.
     ///
     /// ## Safety
     /// The data at the given address must be an I/O mapped HPET.
@@ -38,14 +38,10 @@ impl HighPrecisionEventTimer {
         let registers = unsafe { &mut *(address as *mut registers::HpetRegisters) };
         let timers =
             (address + mem::size_of::<registers::HpetRegisters>() as u64) as *mut timer::HpetTimer;
-        let timers = unsafe {
-            slice::from_raw_parts_mut(
-                timers,
-                ((registers.general_capabilitis_and_id_register() >> 8) & 0b11111) as usize,
-            )
-        };
+        let gci = registers.general_capabilitis_and_id_register();
+        let timers = unsafe { slice::from_raw_parts_mut(timers, ((gci >> 8) & 0b11111) as usize) };
 
-        let tracking = if (registers.general_capabilitis_and_id_register() & 0x8000) == 0x8000 {
+        let tracking = if (gci & 0x8000) == 0x8000 {
             if legacy_replacement {
                 registers.set_general_configuration_register(
                     registers.general_configuration_register() & 2,
@@ -136,16 +132,11 @@ impl HighPrecisionEventTimer {
     /// so be sure to call [`return_comparator`] with it when you are done.
     /// If no comparator is available, `None` will be returned.
     pub fn lend_comparator(&mut self) -> Option<HpetComparator> {
-        let idx = self.tracking.trailing_ones();
-        if idx >= 8 {
-            return None;
-        }
+        let idx = self.tracking.trailing_ones() as usize;
+        let timer = self.timers.get_mut(idx)?;
 
         self.tracking |= 1 << idx;
-        Some(HpetComparator::new(
-            unsafe { core::mem::transmute(&mut self.timers[idx as usize]) },
-            idx as u8,
-        ))
+        Some(HpetComparator::new(timer, idx as u8))
     }
 
     /// Returns a lended comparator, marking it as available again.

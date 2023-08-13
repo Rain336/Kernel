@@ -1,4 +1,4 @@
-use volatile::Volatile;
+use core::ptr;
 
 #[repr(C, packed)]
 pub struct HpetTimer {
@@ -8,29 +8,33 @@ pub struct HpetTimer {
     _reserved: u64,
 }
 
-#[allow(unaligned_references)]
 impl HpetTimer {
     pub fn configuration_and_capability_register(&self) -> u64 {
-        Volatile::new_read_only(&self.configuration_and_capability_register).read()
+        unsafe { ptr::read_volatile(ptr::addr_of!(self.configuration_and_capability_register)) }
     }
 
     pub fn set_configuration_and_capability_register(&mut self, value: u64) {
-        Volatile::new(&mut self.configuration_and_capability_register).write(value)
+        unsafe {
+            ptr::write_volatile(
+                ptr::addr_of_mut!(self.configuration_and_capability_register),
+                value,
+            )
+        };
     }
 
     pub fn comparator_value_register(&self) -> u64 {
-        Volatile::new_read_only(&self.comparator_value_register).read()
+        unsafe { ptr::read_volatile(ptr::addr_of!(self.comparator_value_register)) }
     }
 
     pub fn set_comparator_value_register(&mut self, value: u64) {
-        Volatile::new(&mut self.comparator_value_register).write(value)
+        unsafe { ptr::write_volatile(ptr::addr_of_mut!(self.comparator_value_register), value) };
     }
 
     pub fn fsb_interrupt_route_register(&self) -> u64 {
-        Volatile::new_read_only(&self.fsb_interrupt_route_register).read()
+        unsafe { ptr::read_volatile(ptr::addr_of!(self.fsb_interrupt_route_register)) }
     }
 
     pub fn set_fsb_interrupt_route_register(&mut self, value: u64) {
-        Volatile::new(&mut self.fsb_interrupt_route_register).write(value)
+        unsafe { ptr::write_volatile(ptr::addr_of_mut!(self.fsb_interrupt_route_register), value) };
     }
 }

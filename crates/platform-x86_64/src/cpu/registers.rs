@@ -87,7 +87,7 @@ static CONTROL_REGISTER_4: SyncLazy<Cr4Flags> = SyncLazy::new(|| {
     };
 
     if let Some(info) = CPUID.get_extended_feature_info() {
-        // Enabling this will break everyting since we don't support L5 paging yet
+        // Enabling this will break everything since we don't support L5 paging yet
         //if info.has_la57() { (INTEL SUPPORTED / AMD UNKNOWN)
         //    bits |= Cr4Flags::L5_PAGING;
         //}
@@ -97,7 +97,7 @@ static CONTROL_REGISTER_4: SyncLazy<Cr4Flags> = SyncLazy::new(|| {
         if info.has_smep() {
             bits |= Cr4Flags::SUPERVISOR_MODE_EXECUTION_PROTECTION;
         }
-        // Might break some stuff, but should definitly be considert in the future
+        // Might break some stuff, but should definitely be considers in the future
         //if info.has_smap() {
         //    bits |= Cr4Flags::SUPERVISOR_MODE_ACCESS_PREVENTION;
         //}
@@ -164,7 +164,6 @@ static EXTENDED_CONTROL_REGISTER: SyncLazy<XCr0Flags> = SyncLazy::new(|| {
         if info.xcr0_supports_pkru() {
             bits |= XCr0Flags::MPK;
         }
-        debug!("XCr0: {:?}", bits);
         bits
     } else {
         XCr0Flags::X87

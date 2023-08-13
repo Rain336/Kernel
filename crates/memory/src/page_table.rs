@@ -5,7 +5,7 @@
 //! Page tables form a tree-like structure with the root page table pointing to lower levels.
 //! For the actual translation, the address is split into indexes as seen on [`super::addr::VirtAddr`].
 //! These indexes are used to index into the page tables, with the highest level being the root table and going lower from there.
-//! If a table terminates early, the remaning indexes as well as the page offset are directly mapped to the physical address.
+//! If a table terminates early, the remaining indexes as well as the page offset are directly mapped to the physical address.
 use super::size::{PageSize, Size4KiB};
 use bitflags::bitflags;
 use common::addr::PhysAddr;
@@ -14,8 +14,8 @@ use common::sync::CriticalSection;
 use core::ops::{Index, IndexMut};
 use core::sync::atomic::{AtomicU64, Ordering};
 
-/// 12-bit page offset at the begining of a virtual address.
-/// It is always dirrectly mapped to a physical address, since 4 kibibytes are the smallest mappable unit.
+/// 12-bit page offset at the beginning of a virtual address.
+/// It is always directly mapped to a physical address, since 4 KiB are the smallest mappable unit.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PageOffset(u16);
 
@@ -115,7 +115,7 @@ impl PageTableLevel {
     ///
     /// ## Safety
     ///
-    /// This function allows creating page table levels wich might not be supported.
+    /// This function allows creating page table levels which might not be supported.
     pub const unsafe fn new_unsafe(value: u8) -> Self {
         PageTableLevel(value)
     }
@@ -173,16 +173,16 @@ impl From<PageTableLevel> for u8 {
 bitflags! {
     /// Flags used to control a page table entry.
     pub struct PageTableFlags: u64 {
-        /// Must be set for the entry to be vaild, otherwise the entry is ignored.
+        /// Must be set for the entry to be valid, otherwise the entry is ignored.
         const VALID = 1;
 
         /// Allows writing into the page.
-        /// Higher levels take precedance over lower levels.
+        /// Higher levels take precedence over lower levels.
         const WRITEABLE = 1 << 1;
 
         /// Allows accessing the page from rings > 0.
-        /// Higher levels take precedance over lower levels.
-        const USER_ACCESSABLE = 1 << 2;
+        /// Higher levels take precedence over lower levels.
+        const USER_ACCESSIBLE = 1 << 2;
 
         const WRITE_THROUGH = 1 << 3;
 
@@ -198,7 +198,7 @@ bitflags! {
         /// Says that this entry doesn't point to another page table, but rather directly to a mapped region.
         const HUGE_PAGE = 1 << 7;
 
-        /// Keeps the mapping in cache, even when the addrass space gets swapped.
+        /// Keeps the mapping in cache, even when the address space gets swapped.
         const GLOBAL = 1 << 8;
 
         const BIT_9 = 1 << 9;
@@ -227,9 +227,9 @@ bitflags! {
     ///
     /// The READ, WRITE and EXECUTE bits define if entry points to another table or a block of memory to be mapped.
     /// If READ, WRITE and EXECUTE are all unset, this entry points to another table otherwise, mapping terminates here.
-    /// Also, WRITE requires READ to be set, WRITE and WRITE + EXECUTE are not vaild and reserved for future use.
+    /// Also, WRITE requires READ to be set, WRITE and WRITE + EXECUTE are not valid and reserved for future use.
     pub struct PageTableFlags: u64 {
-        /// Must be set for the entry to be vaild, otherwise the entry is ignored.
+        /// Must be set for the entry to be valid, otherwise the entry is ignored.
         const VALID = 1;
 
         /// Allows reading inside the mapped region.
@@ -242,9 +242,9 @@ bitflags! {
         const EXECUTE = 1 << 3;
 
         /// Allows access to the mapped region from user mode.
-        const USER_ACCESSABLE = 1 << 4;
+        const USER_ACCESSIBLE = 1 << 4;
 
-        /// Keeps the mapping in cache, even when the addrass space gets swapped.
+        /// Keeps the mapping in cache, even when the address space gets swapped.
         const GLOBAL = 1 << 5;
 
         /// Set by the processor when a read happens in the mapped region.
@@ -274,7 +274,7 @@ pub enum PageTranslation {
 
 /// An entry in a page table.
 /// Page table entries are 64 bits on all currently supported platforms (x86_64, AArch64, resicv64).
-/// The make up of these is architecture specific with each haveing diffrent [`PageTableFlags`].
+/// The make up of these is architecture specific with each having different [`PageTableFlags`].
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct PageTableEntry(u64);
@@ -308,7 +308,7 @@ impl PageTableEntry {
 
     /// Returns the [`PhysAddr`] of this entry.
     /// This can be a pointer to the next page table or a pointer to a block of memory to be mapped.
-    /// Wich of these depends on the [`PageTableFlags`] of this entry.
+    /// Which of these depends on the [`PageTableFlags`] of this entry.
     pub fn addr(&self) -> PhysAddr {
         let mask = MEMORY_INFO.page_table_entry_address_mask;
         PhysAddr::new(self.0 & mask)
@@ -363,23 +363,23 @@ pub const LOCK_BIT: PageTableFlags = PageTableFlags::BIT_10;
 #[cfg(riscv)]
 pub const LOCK_BIT: PageTableFlags = PageTableFlags::BIT_9;
 
-const LOCK_BIT_U64: u64 = LOCK_BIT.bits;
+const LOCK_BIT_U64: u64 = LOCK_BIT.bits();
 
 /// A [`PageTableEntry`] that allows concurrent access.
-/// This is doen by defining one bit as a [`LOCK_BIT`] that when set,
-/// signals the entry is being initilized.
-/// Currently entries cannot be deleted, but since this technique is only needed for kernal memory mapping,
-/// it is sufficent to just leave potental dead pages linger.
+/// This is done by defining one bit as a [`LOCK_BIT`] that when set,
+/// signals the entry is being initialized.
+/// Currently entries cannot be deleted, but since this technique is only used for kernel memory mapping,
+/// it is sufficient to just leave potential dead pages linger.
 #[repr(transparent)]
 pub struct LockedPageTableEntry(AtomicU64);
 
 impl LockedPageTableEntry {
-    /// Creates an unused, uninitilized entry.
+    /// Creates an unused, uninitialized entry.
     pub const fn new() -> Self {
         LockedPageTableEntry(AtomicU64::new(0))
     }
 
-    /// Reads the page table entry, if it's initilized
+    /// Reads the page table entry, if it's initialized.
     pub fn get(&self) -> Option<PageTableEntry> {
         let current = PageTableEntry(self.0.load(Ordering::Relaxed));
         if current.flags().contains(PageTableFlags::VALID) {
@@ -399,7 +399,7 @@ impl LockedPageTableEntry {
     }
 
     /// Initializes the entry to the given value.
-    /// Returns `Ok` if the value could be initilized, `Err` if the vaile was already initilized.
+    /// Returns `Ok` if the entry could be initialized, `Err` if the entry has already been initialized.
     pub fn set(&self, value: PageTableEntry) -> Result<(), PageTableEntry> {
         let _section = CriticalSection::new();
         match self
@@ -414,7 +414,7 @@ impl LockedPageTableEntry {
         }
     }
 
-    /// Initilizes the entry using the given function or returns the already initilized value.
+    /// Initializes the entry using the given function or returns the already initialized value.
     pub fn get_or_init(&self, f: impl FnOnce() -> PageTableEntry) -> PageTableEntry {
         let section = CriticalSection::new();
         match self
@@ -515,7 +515,7 @@ pub struct LockedPageTable {
 
 impl LockedPageTable {
     pub const fn new() -> Self {
-        // This constant is not accessable outside the new function and shouldn't be
+        // This constant is not accessible outside the new function and shouldn't be
         // It is only used to initialize the locked page table.
         #[allow(clippy::declare_interior_mutable_const)]
         const EMPTY: LockedPageTableEntry = LockedPageTableEntry::new();

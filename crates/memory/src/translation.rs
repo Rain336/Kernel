@@ -1,10 +1,14 @@
-use super::page_table::{LockedPageTable, PageTable, PageTableLevel, PageTranslation};
+//! # Translation Module
+//!
+//! Implements virtual to physical address translation, as implemented by the MMU.
+use super::page_table::{LockedPageTable, PageTableLevel, PageTranslation};
 use crate::addr::VirtAddrExt;
 use common::addr::{PhysAddr, VirtAddr};
+use common::memory::{
+    physical_to_virtual, DIRECT_MAPPING_SIZE, DIRECT_MAPPING_START, KERNEL_SPACE_START,
+};
 use common::sync::SyncLazy;
 
-pub const PHYSICAL_OFFSET: VirtAddr = unsafe { VirtAddr::new_unsafe(0xFFFFFF0000000000) };
-pub const KERNEL_OFFSET: VirtAddr = unsafe { VirtAddr::new_unsafe(0xFFFFFF8000000000) };
 pub const KERNEL_PAGE_TABLE_LEVEL: PageTableLevel = unsafe { PageTableLevel::new_unsafe(3) };
 
 pub static KERNEL_PAGE_TABLE: SyncLazy<&'static LockedPageTable> = SyncLazy::new(|| {
@@ -13,7 +17,7 @@ pub static KERNEL_PAGE_TABLE: SyncLazy<&'static LockedPageTable> = SyncLazy::new
     let mut level = PageTableLevel::highest();
 
     while level != KERNEL_PAGE_TABLE_LEVEL {
-        table = match table[KERNEL_OFFSET.page_table_index(level)]
+        table = match table[KERNEL_SPACE_START.page_table_index(level)]
             .get()
             .unwrap()
             .translate()
@@ -29,78 +33,46 @@ pub static KERNEL_PAGE_TABLE: SyncLazy<&'static LockedPageTable> = SyncLazy::new
     table
 });
 
-pub fn physical_to_virtual(addr: PhysAddr) -> VirtAddr {
-    let result = PHYSICAL_OFFSET + addr.as_u64();
-    if result >= KERNEL_OFFSET {
-        panic!("physical_to_virtual can only access up to 512 GiB");
-    }
-    result
-}
-
+/// Maps the given virtual address to a physical address, or `None` if the address isn't mapped.
 pub fn virtual_to_physical(addr: VirtAddr) -> Option<PhysAddr> {
-    if addr < PHYSICAL_OFFSET {
-        let table = get_root_page_table();
-        let table = unsafe { &*physical_to_virtual(table).as_ptr::<PageTable>() };
-        treverse(addr, table, PageTableLevel::highest())
-    } else if addr < KERNEL_OFFSET {
-        Some(PhysAddr::new_truncate((addr - PHYSICAL_OFFSET).as_u64()))
+    // The address can be in one of three memory areas.
+    // The userspace area, which gets mapped using the currently active process address space.
+    // The direct mapping area, which just means subtracting the offset.
+    // The kernel-space area, which needs to use locked page tables to translate.
+
+    if addr < DIRECT_MAPPING_START {
+        todo!("resolve in current address space")
+    } else if addr < KERNEL_SPACE_START {
+        if addr < (DIRECT_MAPPING_START + DIRECT_MAPPING_SIZE) {
+            None
+        } else {
+            Some(PhysAddr::new_truncate(
+                (addr - DIRECT_MAPPING_START).as_u64(),
+            ))
+        }
     } else {
-        treverse_locked(addr, &KERNEL_PAGE_TABLE, KERNEL_PAGE_TABLE_LEVEL)
+        translate(addr, &KERNEL_PAGE_TABLE, KERNEL_PAGE_TABLE_LEVEL)
     }
 }
 
-fn treverse(addr: VirtAddr, mut table: &PageTable, mut level: PageTableLevel) -> Option<PhysAddr> {
-    loop {
-        let next = match table[addr.page_table_index(level)].translate() {
-            PageTranslation::PageTable(next) => next,
-            PageTranslation::Page(offset) => {
-                return Some(offset + (addr.as_u64() & level.address_space_mask()))
-            }
-            PageTranslation::None => return None,
-        };
+/// Resolves the give virtual address `addr` in the given locked page table `table` of level `level`
+fn translate(addr: VirtAddr, table: &LockedPageTable, level: PageTableLevel) -> Option<PhysAddr> {
+    let next = match table[addr.page_table_index(level)].get()?.translate() {
+        PageTranslation::PageTable(next) => next,
+        PageTranslation::Page(offset) => {
+            return Some(offset + (addr.as_u64() & level.address_space_mask()))
+        }
+        PageTranslation::None => return None,
+    };
 
-        match level.next_lower_level() {
-            Some(x) => {
-                level = x;
-                table = unsafe { &*physical_to_virtual(next).as_ptr::<PageTable>() };
-            }
-            None => {
-                let offset: u64 = addr.page_offset().into();
-                return Some(next + offset);
-            }
+    match level.next_lower_level() {
+        Some(level) => {
+            let table = unsafe { &*physical_to_virtual(next).as_ptr::<LockedPageTable>() };
+            translate(addr, table, level)
+        }
+        None => {
+            let offset: u64 = addr.page_offset().into();
+            return Some(next + offset);
         }
     }
-}
-
-fn treverse_locked(
-    addr: VirtAddr,
-    mut table: &LockedPageTable,
-    mut level: PageTableLevel,
-) -> Option<PhysAddr> {
-    loop {
-        let next = match table[addr.page_table_index(level)].get()?.translate() {
-            PageTranslation::PageTable(next) => next,
-            PageTranslation::Page(offset) => {
-                return Some(offset + (addr.as_u64() & level.address_space_mask()))
-            }
-            PageTranslation::None => return None,
-        };
-
-        match level.next_lower_level() {
-            Some(x) => {
-                level = x;
-                table = unsafe { &*physical_to_virtual(next).as_ptr::<LockedPageTable>() };
-            }
-            None => {
-                let offset: u64 = addr.page_offset().into();
-                return Some(next + offset);
-            }
-        }
-    }
-}
-
-#[cfg(target_arch = "x86_64")]
-fn get_root_page_table() -> PhysAddr {
-    let (table, _) = x86_64::registers::control::Cr3::read();
-    table.start_address().into()
 }

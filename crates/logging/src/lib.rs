@@ -1,14 +1,14 @@
 //! # Microdragon Logging Subsystem
 //!
 //! The logging system provides an implementation for the `log` crate for the rest of the kernel to use.
-//! It logs to two diffrent outputs, if available:
+//! It logs to two different outputs, if available:
 //!
 //! `Serial Port`
 //! By default, microdragon will log to serial port 1 with colored output using ANSI escape sequences.
 //! (TODO: Make port and logging configurable)
 //!
 //! `Framebuffer Terminal`
-//! By default, microdragon will request a frame buffer from the bootloader that, if avilable, will be used for logging.
+//! By default, microdragon will request a frame buffer from the bootloader that, if available, will be used for logging.
 //! (TODO: Make logging configurable)
 #![no_std]
 
@@ -38,7 +38,7 @@ impl Log for LoggingSubsystem {
     fn log(&self, record: &Record) {
         // Pre-format the level text.
         let level = match record.level() {
-            Level::Error => "\x1B[91mERROR",
+            Level::Error => "\x1B[91mERROR\x1B[39m",
             Level::Warn => "\x1B[93m WARN\x1B[39m",
             Level::Info => "\x1B[92m INFO\x1B[39m",
             Level::Debug => "\x1B[94mDEBUG\x1B[39m",
@@ -58,7 +58,7 @@ impl Log for LoggingSubsystem {
 
 static INSTANCE: LoggingSubsystem = LoggingSubsystem;
 
-/// Initalizes the logging subsystem.
+/// Initializes the logging subsystem.
 /// Interrupts should still be disables while this is run.
 pub fn init() {
     // Run the initialization sequence for the logging outputs.

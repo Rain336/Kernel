@@ -2,17 +2,15 @@
 
 use super::fixed;
 use super::mapping::{unmap_bytes, MemoryPermissions};
-use crate::translation::{physical_to_virtual, KERNEL_OFFSET};
+use crate::translation::KERNEL_OFFSET;
 use common::addr::VirtAddr;
+use common::memory::physical_to_virtual;
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-/// All ZSTs get this special adress
+/// All ZSTs get this special address
 const ZST_ADDRESS: *mut u8 = 0xFFFFFFFFDEADBEEF as *mut u8;
-
-#[global_allocator]
-static ALLOCATOR: GlobalAllocator = GlobalAllocator;
 
 pub struct GlobalAllocator;
 
