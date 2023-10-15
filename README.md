@@ -7,7 +7,7 @@ I am currently focusing on x86_64, but definitely want to support AArch64 and ri
 ## Component Overview
 
 `libs/hpet`
-Library crate for controlling a High Precision Event Timer (HPET) found in most x86_64 platforms. The library is finished and can be used by other kernels too in theory.
+Library crate for controlling the High Precision Event Timer (HPET) found in most x86_64 platforms. The library is finished and can be used by other kernels too in theory.
 
 `libs/bootloader`
 Implements struct and type definitions to bootstrap microdragon.
