@@ -7,7 +7,7 @@ name = "acpi"
 version = "0.0.0"
 dependencies = [
  "common",
- "limine",
+ "limine 0.1.10",
  "log",
 ]
 
@@ -58,11 +58,15 @@ name = "kmm"
 version = "0.0.0"
 dependencies = [
  "common",
- "limine",
+ "limine 0.1.10",
  "memory",
  "spinning_top",
  "x86_64",
 ]
+
+[[package]]
+name = "limine"
+version = "0.0.0"
 
 [[package]]
 name = "limine"
@@ -94,7 +98,7 @@ name = "logging"
 version = "0.0.0"
 dependencies = [
  "common",
- "limine",
+ "limine 0.1.10",
  "log",
  "noto-sans-mono-bitmap",
  "uart_16550",

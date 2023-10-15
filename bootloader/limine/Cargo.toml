@@ -1,0 +1,8 @@
+[package]
+name = "limine"
+version = "0.0.0"
+edition = "2021"
+publish = true
+
+#[target.'cfg(target_arch = "x86_64")'.dependencies]
+#x86_64 = "0.14"

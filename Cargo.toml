@@ -1,5 +1,8 @@
 [workspace]
+resolver = "2"
 members = [
+    "bootloader/*",
     "crates/*",
-    "libs/*"
+    "libs/*",
+    #"modules/*",
 ]
