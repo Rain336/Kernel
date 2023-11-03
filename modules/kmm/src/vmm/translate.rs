@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 use common::addr::{PhysAddr, VirtAddr};
 use common::memory::{physical_to_virtual, KERNEL_DYNAMIC_START, KERNEL_LEVEL_3_PAGE_TABLE};
 use memory::addr::VirtAddrExt;

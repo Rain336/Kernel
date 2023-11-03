@@ -1,3 +1,6 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 bootloader := "limine"
 target := "x86_64-unknown-none"
 release := "false"
@@ -29,6 +32,18 @@ run_bios: pack
 # Runs the kernel in QEMU using UEFI boot (WIP)
 run_uefi: pack
   {{ qemu_command }} -bios deps/OVMF/OVMF.fd -drive file=microdragon.iso,if=ide
+
+license:
+  #!/bin/sh
+  TEST='// This Source Code Form is subject to the terms of the Mozilla Public'
+  NOTICE="// This Source Code Form is subject to the terms of the Mozilla Public\n// License, v. 2.0. If a copy of the MPL was not distributed with this\n// file, You can obtain one at http://mozilla.org/MPL/2.0/."
+  FILES=`find . -type f -name '*.rs' -not -path './libs/*'`
+  for file in $FILES; do
+    if [ "$(head -n 1 $file)" != "$TEST" ]; then
+      echo "$NOTICE\n$(cat $file)" > $file
+      echo Updated license header for $file
+    fi
+  done
 
 _pack_limine: _install_limine
   @echo Copying bootloader files...

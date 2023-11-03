@@ -1,9 +1,10 @@
 [package]
 name = "memory"
-version = "0.0.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
 
 [dependencies]
 common = { path = "../common" }
-bitflags = "2.2"
-log = "0.4"
+bitflags = { workspace = true }
+log = { workspace = true }

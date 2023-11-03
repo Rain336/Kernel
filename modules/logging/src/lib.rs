@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //! # Microdragon Logging Module
 //!
 //! The logging system provides an implementation for the `log` crate for the rest of the kernel to use.
@@ -41,11 +44,11 @@ impl Log for LoggingSubsystem {
     fn log(&self, record: &Record) {
         // Pre-format the level text.
         let level = match record.level() {
-            Level::Error => "\x1B[91mERROR\x1B[39m",
-            Level::Warn => "\x1B[93m WARN\x1B[39m",
-            Level::Info => "\x1B[92m INFO\x1B[39m",
-            Level::Debug => "\x1B[94mDEBUG\x1B[39m",
-            Level::Trace => "\x1B[95mTRACE\x1B[39m",
+            Level::Error => "[91mERROR[39m",
+            Level::Warn => "[93m WARN[39m",
+            Level::Info => "[92m INFO[39m",
+            Level::Debug => "[94mDEBUG[39m",
+            Level::Trace => "[95mTRACE[39m",
         };
 
         // Start a critical section, since interrupts might log too.

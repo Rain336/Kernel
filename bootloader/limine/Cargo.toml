@@ -1,9 +1,9 @@
 [package]
 name = "microdragon-limine"
-version = "0.0.0"
-edition = "2021"
-publish = true
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
 
 [dependencies]
 runner = { path = "../../modules/runner" }
-limine = "0.1"
+limine = { workspace = true }

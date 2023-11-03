@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //! ## Memory Map Setup
 //!
 //! Reads in the memory map, provides the [`crate::pmm`] with free physical frames and returns the highest physical memory address.

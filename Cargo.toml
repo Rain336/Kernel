@@ -1,8 +1,18 @@
 [workspace]
 resolver = "2"
-members = [
-    "bootloader/*",
-    "crates/*",
-    "libs/*",
-    "modules/*",
-]
+members = ["bootloader/*", "crates/*", "libs/*", "modules/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+limine = "0.1.11"
+spinning_top = "0.3.0"
+bitflags = "2.4.1"
+log = "0.4.20"
+raw-cpuid = "11.0.1"
+uart_16550 = "0.3"
+noto-sans-mono-bitmap = "0.2"
+x86_64 = "0.14.11"

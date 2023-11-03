@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 use crate::escape::EscapeSequence;
 use crate::framebuffer::{Framebuffer, LINE_SPACING};
 use crate::position::Position;
@@ -139,9 +142,10 @@ impl Write for TerminalOutput {
         }
 
         match c {
-            '\r' => {}
-            '\n' => self.newline(),
-            '\x1b' => self.sequence.start(),
+            '' => {}
+            '
+' => self.newline(),
+            '' => self.sequence.start(),
             _ if (c as u32) < 32 => {}
             _ => {
                 if let Some(c) = get_raster(c, FontWeight::Regular, RASTER_HEIGHT) {

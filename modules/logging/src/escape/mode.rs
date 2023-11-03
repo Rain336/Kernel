@@ -1,8 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //! # Parsing of escape sequences for Terminal Output.
 //!
 //! The parsing is done though a state machine enum [`EscapeMode`].
 //! On start, the state machine is [`EscapeMode::None`] state.
-//! When a `\x1B` char is encountered, the state changes to [`EscapeMode::ExpectOpenBrace`] and following characters aren't printed.
+//! When a `` char is encountered, the state changes to [`EscapeMode::ExpectOpenBrace`] and following characters aren't printed.
 //!
 //! In [`EscapeMode::ExpectOpenBrace`] state, a `[` needs to follow, or the state is returned to [`EscapeMode::None`] and the invalid char printed.
 //! If a `[` was supplied, the state changes to [`EscapeMode::StartSequence`].

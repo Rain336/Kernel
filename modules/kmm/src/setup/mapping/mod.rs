@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 use common::addr::{PhysAddr, VirtAddr};
 use core::ptr;
 use log::{debug, info, warn};
@@ -40,7 +43,13 @@ pub fn init(size: u64) {
 fn set_root_page_table(root: PhysAddr) {
     use x86_64::registers::control::Cr3;
     use x86_64::structures::paging::PhysFrame;
+    use x86_64::PhysAddr;
 
     let (_, flags) = Cr3::read();
-    unsafe { Cr3::write(PhysFrame::containing_address(root.into()), flags) };
+    unsafe {
+        Cr3::write(
+            PhysFrame::containing_address(PhysAddr::new_truncate(root.as_u64())),
+            flags,
+        )
+    };
 }

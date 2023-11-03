@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //! # Address Module
 //!
 //! A kernel need to work with two kinds of addresses, virtual and physical.
@@ -142,20 +145,6 @@ impl<T> From<*const T> for VirtAddr {
 impl<T> From<*mut T> for VirtAddr {
     fn from(value: *mut T) -> Self {
         VirtAddr::new_truncate(value as u64)
-    }
-}
-
-#[cfg(target_arch = "x86_64")]
-impl From<x86_64::addr::VirtAddr> for VirtAddr {
-    fn from(value: x86_64::addr::VirtAddr) -> Self {
-        VirtAddr(value.as_u64())
-    }
-}
-
-#[cfg(target_arch = "x86_64")]
-impl From<VirtAddr> for x86_64::addr::VirtAddr {
-    fn from(value: VirtAddr) -> Self {
-        unsafe { x86_64::addr::VirtAddr::new_unsafe(value.as_u64()) }
     }
 }
 
@@ -366,20 +355,6 @@ impl TryFrom<u64> for PhysAddr {
 impl From<PhysAddr> for u64 {
     fn from(value: PhysAddr) -> Self {
         value.0
-    }
-}
-
-#[cfg(target_arch = "x86_64")]
-impl From<x86_64::addr::PhysAddr> for PhysAddr {
-    fn from(value: x86_64::addr::PhysAddr) -> Self {
-        PhysAddr(value.as_u64())
-    }
-}
-
-#[cfg(target_arch = "x86_64")]
-impl From<PhysAddr> for x86_64::addr::PhysAddr {
-    fn from(value: PhysAddr) -> Self {
-        unsafe { x86_64::addr::PhysAddr::new_unsafe(value.as_u64()) }
     }
 }
 

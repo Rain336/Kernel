@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //! # Module Interface
 //!
 //! This create is depended on by all other kernel modules to interface with information supplied by the bootloader and also other modules.

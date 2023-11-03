@@ -1,16 +1,16 @@
 [package]
 name = "kmm"
-version = "0.0.0"
-edition = "2021"
-publish = false
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
 
 [dependencies]
 interface = { path = "../interface" }
 common = { path = "../../crates/common" }
 memory = { path = "../../crates/memory" }
-log = "0.4"
-spinning_top = "0.2"
-limine = "0.1"
+log = { workspace = true }
+spinning_top = { workspace = true }
+limine = { workspace = true }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-x86_64 = "0.14"
+x86_64 = { workspace = true }

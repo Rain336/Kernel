@@ -1,3 +1,6 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //! # Fixed Size Allocators
 //!
 //! This module contains a fixed size allocator with four size classes 64, 128, 256 and 512 bytes.
