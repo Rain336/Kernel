@@ -1,11 +1,11 @@
-//! The sync module contins varius primitives of synchronization.
-//! List of primitives:
+//! The sync module contains various primitives of synchronization.
+//! List of the primitives:
 //!
-//! - [`lazy`] A lazy cell that is Send + Sync, baced on [`once`]
+//! - [`lazy`] A lazy cell that is Send + Sync, based on [`once`]
 //! - [`once`] A once cell that is Send + Sync
-//! - [`rwlock`] A reader-writer spinlock
-//! - [`section`] A critical section RAII type to mark uninterruptable sections of code
-//! - [`spinning_top`] Re-exports the spinning top spinlock crate
+//! - [`rwlock`] A reader-writer Spinlock
+//! - [`section`] A critical section RAII type to mark uninterruptible sections of code
+//! - [`spinning_top`] Re-exports the spinning top Spinlock crate
 
 mod lazy;
 mod once;

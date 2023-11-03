@@ -1,9 +1,0 @@
-[package]
-name = "acpi"
-version = "0.0.0"
-edition = "2021"
-
-[dependencies]
-common = { path = "../common" }
-log = "0.4"
-limine = "0.1"

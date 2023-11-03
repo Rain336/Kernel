@@ -1,0 +1,10 @@
+[package]
+name = "acpi"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+interface = { path = "../interface" }
+common = { path = "../../crates/common" }
+log = "0.4"

@@ -4,5 +4,5 @@ members = [
     "bootloader/*",
     "crates/*",
     "libs/*",
-    #"modules/*",
+    "modules/*",
 ]

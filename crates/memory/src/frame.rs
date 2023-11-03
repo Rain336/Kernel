@@ -1,9 +1,10 @@
 //! # Frame module
 //!
 //! A frame is a mappable block of physical memory.
-//! To see wich sized exist and wich are supported by wich archetecture, see [`PageSize`].
+//! To see which sizes exist and which are supported by which architecture, see [`PageSize`].
 //! Mapping works by translating a [`super::page::Page`] to a [`PhysFrame`] of the same size.
-//! Frames have to be alligned to it's size, to allow the whole physical memory to be devided into frames.
+//! Frames have to be aligned to it's size, to allow the whole physical memory to be divided into frames.
+//!
 use super::size::{PageSize, Size4KiB};
 use super::AddressNotAligned;
 use common::addr::PhysAddr;
@@ -46,7 +47,7 @@ impl<S: PageSize> PhysFrame<S> {
         }
     }
 
-    /// Returns the frame wich contains the given physical address.
+    /// Returns the frame which contains the given physical address.
     pub fn containing_address(address: PhysAddr) -> Self {
         PhysFrame {
             start_address: address.align_down(S::SIZE),

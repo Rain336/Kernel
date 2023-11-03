@@ -1,0 +1,12 @@
+[package]
+name = "logging"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+interface = { path = "../interface" }
+common = { path = "../../crates/common" }
+uart_16550 = "0.3"
+log = "0.4"
+noto-sans-mono-bitmap = "0.2"

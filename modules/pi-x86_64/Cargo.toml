@@ -1,0 +1,13 @@
+[package]
+name = "pi"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+interface = { path = "../interface" }
+common = { path = "../../crates/common" }
+log = "0.4"
+x86_64 = "0.14"
+raw-cpuid = "11.0"
+bitflags = "2.4"

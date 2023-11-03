@@ -1,9 +1,10 @@
 //! # Page Module
 //!
 //! A page is a mappable block of virtual memory.
-//! To see wich sized exist and wich are supported by wich archetecture, see [`PageSize`].
+//! To see which sizes exist and which are supported by which architecture, see [`PageSize`].
 //! Mapping works by translating a [`Page`] to a [`super::frame::PhysFrame`] of the same size.
-//! Pages have to be alligned to it's size, to allow the whole virtual memory to be devided into pages.
+//! Pages have to be aligned to it's size, to allow the whole virtual memory to be divided into pages.
+//!
 use super::page_table::{PageTableIndex, PageTableLevel};
 use super::size::{PageSize, Size4KiB};
 use super::AddressNotAligned;
@@ -47,7 +48,7 @@ impl<S: PageSize> Page<S> {
         }
     }
 
-    /// Returns the page wich contains the given virtual address.
+    /// Returns the page which contains the given virtual address.
     pub fn containing_address(address: VirtAddr) -> Self {
         Page {
             start_address: address.align_down(S::SIZE),
@@ -146,6 +147,18 @@ impl<S: PageSize> Iterator for PageRange<S> {
     }
 }
 
+impl<S: PageSize> DoubleEndedIterator for PageRange<S> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.start < self.end {
+            let page = self.end - 1;
+            self.end -= 1;
+            Some(page)
+        } else {
+            None
+        }
+    }
+}
+
 impl<S: PageSize> ExactSizeIterator for PageRange<S> {
     fn len(&self) -> usize {
         if self.start < self.end {
@@ -189,6 +202,18 @@ impl<S: PageSize> Iterator for PageRangeInclusive<S> {
                 self.end -= 1;
             }
 
+            Some(page)
+        } else {
+            None
+        }
+    }
+}
+
+impl<S: PageSize> DoubleEndedIterator for PageRangeInclusive<S> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.start < self.end {
+            let page = self.end;
+            self.end -= 1;
             Some(page)
         } else {
             None

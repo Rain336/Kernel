@@ -8,7 +8,7 @@ const READER: u32 = 4;
 const UPGRADED: u32 = 2;
 const WRITER: u32 = 1;
 
-/// The [`RawRwLock`] implementation of the the reader-writer spinlock.
+/// The [`RawRwLock`] implementation of a reader-writer Spinlock.
 pub struct RawRwSpinlock(AtomicU32);
 
 unsafe impl RawRwLock for RawRwSpinlock {
@@ -110,9 +110,9 @@ unsafe impl RawRwLockUpgradeDowngrade for RawRwSpinlock {
     }
 }
 
-/// A many reader one writer spinlock.
+/// A many reader one writer Spinlock.
 /// The lock can have up to 30 concurrent readers and supports upgrading locks.
-pub type RwSpinlock<T> = RwLock<RawRwSpinlock, T>;
+pub type RwSpick<T> = RwLock<RawRwSpinlock, T>;
 pub type RwSpinlockReadGuard<'a, T> = RwLockReadGuard<'a, RawRwSpinlock, T>;
 pub type RwSpinlockUpgradableReadGuard<'a, T> = RwLockUpgradableReadGuard<'a, RawRwSpinlock, T>;
 pub type RwSpinlockWriteGuard<'a, T> = RwLockWriteGuard<'a, RawRwSpinlock, T>;

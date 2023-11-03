@@ -8,18 +8,18 @@ qemu_command := if target == "x86_64-unknown-none" {
 
 # opens a chooser of possible targets
 default:
-  just --choose
+  just --list
 
 # Builds the kernel for the given target and bootloader
 build:
   @echo Building microdragon with {{ bootloader }} Bootloader for {{ target }} target
-  cargo build -p {{ bootloader }} --target {{ target }} {{ if release =~ "true|1|yes" { "--release" } else { "" } }}
+  cargo build -p microdragon-{{ bootloader }} --target {{ target }} {{ if release =~ "true|1|yes" { "--release" } else { "" } }}
 
 # Packs the kernel into an iso file, bootable using UEFI and legacy BIOS boot
 @pack: _check_xorriso build
   -[ -d disk ] && rm -rf disk
   mkdir -p disk/system
-  @cp target/{{ target }}/{{ if release =~ "true|1|yes" { "release" } else { "debug" } }}/{{ bootloader }} disk/system/kernel
+  @cp target/{{ target }}/{{ if release =~ "true|1|yes" { "release" } else { "debug" } }}/microdragon-{{ bootloader }} disk/system/kernel
   just _pack_{{ bootloader }}
 
 # Runs the kernel in QEMU using legacy BIOS boot

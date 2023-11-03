@@ -1,5 +1,6 @@
 //! # Address Extensions Module
 //!
+//! Adds functions to [`VirtAddr`] to extract the page offset as well as the page table index.
 //!
 
 use crate::page_table::{PageOffset, PageTableIndex, PageTableLevel};

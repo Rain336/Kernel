@@ -1,11 +1,11 @@
 //! # Common Kernel Library
 //!
-//! The common kernel library contins difrent parts of the kernel that are not architecture specific or
-//! only in small parts that can easily be gated using `#[cfg]`.
+//! The common kernel library contains constructs and primitives used by all parts of the kernel in an architecture-independent way.
 //!
 //! - [`addr`] Contains the [`addr::VirtAddr`] and [`addr::PhysAddr`] structs.
-//! - [`memory`] Contains the [`memory::MemoryInfo`] struct with information about the installed MMU.
-//! - [`sync`] Primitives of syncronization.
+//! - [`memory`] defines the memory layout of the kernel and the OS as a whole.
+//! - [`sync`] supplies different primitives of synchronization to be used by the kernel.
+//!
 #![no_std]
 
 pub mod addr;

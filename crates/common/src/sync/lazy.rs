@@ -2,7 +2,7 @@ use super::SyncOnceCell;
 use core::cell::Cell;
 use core::ops::Deref;
 
-/// A Cell that runs it's given parameter on first access and stores it for subseqent accesses.
+/// A Cell that runs it's given parameter on first access and stores it for subsequent accesses.
 /// Can be used for lazy static variables.
 /// Is based on [`SyncOnceCell`].
 pub struct SyncLazy<T, F = fn() -> T> {
@@ -11,7 +11,7 @@ pub struct SyncLazy<T, F = fn() -> T> {
 }
 
 impl<T, F> SyncLazy<T, F> {
-    /// Creates a new [`SyncLazy`] with the given function as initilizer.
+    /// Creates a new [`SyncLazy`] with the given function as initializer.
     pub const fn new(f: F) -> Self {
         SyncLazy {
             cell: SyncOnceCell::new(),
@@ -21,7 +21,7 @@ impl<T, F> SyncLazy<T, F> {
 }
 
 impl<T, F: FnOnce() -> T> SyncLazy<T, F> {
-    /// Forces the given [`SyncLazy`] to initilize, if it didn't already.
+    /// Forces the given [`SyncLazy`] to initialize, if it didn't already.
     pub fn force(this: &SyncLazy<T, F>) -> &T {
         this.cell.get_or_init(|| match this.init.take() {
             Some(f) => f(),

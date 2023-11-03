@@ -1,13 +1,14 @@
 //! # Address Module
 //!
 //! A kernel need to work with two kinds of addresses, virtual and physical.
-//! A virtual address is the address used by processor for load/store instructions as well as almost all other constructs which access memory.
-//! A physical address is the address send to the actual memory chip, meaning a virtual to physical translation has to happen.
+//! A virtual address is the address used by processor for load/store instructions as well as almost all other CPU constructs which access memory.
+//! A physical address is the address actually send to the memory chip, meaning a virtual to physical translation has to happen.
 //! This translation is done by the memory management unit (MMU), which implies certain restrictions on physical and virtual addresses.
 //! For this reason the [`PhysAddr`] and [`VirtAddr`] structs exist and enforce a well formed physical / virtual address.
 //! See their respective docs to find out about the implied restrictions.
-use crate::memory::MEMORY_INFO;
-use core::fmt::{Binary, LowerHex, Octal, Pointer, UpperHex};
+//!
+use crate::memory::get_memory_info;
+use core::fmt::{self, Binary, Formatter, LowerHex, Octal, Pointer, UpperHex};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 /// Error returned when an invalid address is passed to [`VirtAddr`].
@@ -23,12 +24,9 @@ pub struct VirtAddrNotValid(pub u64);
 /// All bits outside the 9-bit indexes and 12-bit page offset are sign extended, meaning they must have the same bits as the highest valid bit.
 /// Here an example of a level 5 address:
 ///
-/// +---------+-----------+-----------+-----------+-----------+-----------+--------------+
-/// |  Sign   |   Level   |   Level   |   Level   |   Level   |   Level   |     Page     |
-/// | Extend  |     5     |     4     |     3     |     2     |     1     |    Offset    |
-/// +---------+-----------+-----------+-----------+-----------+-----------+--------------+
-/// | 1111111 | 111111000 | 100011111 | 111000111 | 101001101 | 100110000 | 000000000000 |
-/// +---------+-----------+-----------+-----------+-----------+-----------+--------------+
+/// |Sign Extend|Level 5|Level 4|Level 3|Level 2|Level 1|Page Offset|
+/// |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+/// |1111111|111111000|100011111|111000111|101001101|100110000|000000000000|
 ///
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VirtAddr(u64);
@@ -43,7 +41,7 @@ impl VirtAddr {
 
     /// Creates a virtual address from a [`u64`], truncating the sign extend to work on the current architecture.
     pub fn new_truncate(addr: u64) -> Self {
-        let bits = 64 - MEMORY_INFO.virtual_address_bits;
+        let bits = 64 - get_memory_info().virtual_address_bits;
         VirtAddr(((addr << bits) as i64 >> bits) as u64)
     }
 
@@ -103,6 +101,12 @@ impl VirtAddr {
     }
 }
 
+impl Default for VirtAddr {
+    fn default() -> Self {
+        VirtAddr::zero()
+    }
+}
+
 impl From<VirtAddr> for u64 {
     fn from(value: VirtAddr) -> Self {
         value.0
@@ -113,7 +117,7 @@ impl TryFrom<u64> for VirtAddr {
     type Error = VirtAddrNotValid;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        let bits = MEMORY_INFO.virtual_address_bits - 1;
+        let bits = get_memory_info().virtual_address_bits - 1;
         let mask = u64::MAX << bits;
         match (value & mask) >> bits {
             0 => Ok(VirtAddr(value)),
@@ -198,25 +202,25 @@ impl AddAssign<usize> for VirtAddr {
 }
 
 impl Binary for VirtAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Binary::fmt(&self.0, f)
     }
 }
 
 impl LowerHex for VirtAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         LowerHex::fmt(&self.0, f)
     }
 }
 
 impl Octal for VirtAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Octal::fmt(&self.0, f)
     }
 }
 
 impl Pointer for VirtAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Pointer::fmt(&(self.0 as *const ()), f)
     }
 }
@@ -264,7 +268,7 @@ impl SubAssign<usize> for VirtAddr {
 }
 
 impl UpperHex for VirtAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         UpperHex::fmt(&self.0, f)
     }
 }
@@ -279,11 +283,9 @@ pub struct PhysAddrNotValid(pub u64);
 /// All unused bits have to be zero.
 /// An example of a 52-bit address:
 ///
-/// +--------------+------------------------------------------------------+
-/// |    Unused    |                   Physical Address                   |
-/// +--------------+------------------------------------------------------+
-/// | 000000000000 | 1111000000000011100000000110000011100000000011000100 |
-/// +--------------+------------------------------------------------------+
+/// |Unused|Physical Address|
+/// |:-:|:-:|
+/// |000000000000|1111000000000011100000000110000011100000000011000100|
 ///
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PhysAddr(u64);
@@ -297,7 +299,7 @@ impl PhysAddr {
 
     /// Creates a physical address forma [`u64`], truncating the unused start of the address to work on the current architecture.
     pub fn new_truncate(addr: u64) -> Self {
-        let max = 1 << MEMORY_INFO.physical_address_bits;
+        let max = 1 << get_memory_info().physical_address_bits;
         PhysAddr(addr % max)
     }
 
@@ -339,6 +341,12 @@ impl PhysAddr {
     /// Returns whenever the physical address is aligned to the give alignment.
     pub fn is_aligned(self, align: u64) -> bool {
         self.align_down(align) == self
+    }
+}
+
+impl Default for PhysAddr {
+    fn default() -> Self {
+        PhysAddr::zero()
     }
 }
 
@@ -418,25 +426,25 @@ impl AddAssign<usize> for PhysAddr {
 }
 
 impl Binary for PhysAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Binary::fmt(&self.0, f)
     }
 }
 
 impl LowerHex for PhysAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         LowerHex::fmt(&self.0, f)
     }
 }
 
 impl Octal for PhysAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Octal::fmt(&self.0, f)
     }
 }
 
 impl Pointer for PhysAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Pointer::fmt(&(self.0 as *const ()), f)
     }
 }
@@ -484,7 +492,7 @@ impl SubAssign<usize> for PhysAddr {
 }
 
 impl UpperHex for PhysAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         UpperHex::fmt(&self.0, f)
     }
 }

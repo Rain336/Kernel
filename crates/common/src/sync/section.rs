@@ -1,4 +1,4 @@
-/// A critical section that disables external interrupts until it's droped.
+/// A critical section that disables external interrupts until it's dropped.
 /// Critical sections can be nested without interfering with each other.
 pub struct CriticalSection(bool);
 

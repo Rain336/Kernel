@@ -6,6 +6,7 @@
 //! - [`page_table`] Contains the [`page_table::PageTable`] struct, which represents a architecture specific page table.
 //! - [`size`] Contains types for the different sizes that are valid to be mapped to physical memory.
 //! - [`translation`] Translates a physical to a virtual address or a virtual to a physical address.
+//!
 #![no_std]
 
 pub mod addr;

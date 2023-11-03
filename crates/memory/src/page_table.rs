@@ -6,11 +6,13 @@
 //! For the actual translation, the address is split into indexes as seen on [`super::addr::VirtAddr`].
 //! These indexes are used to index into the page tables, with the highest level being the root table and going lower from there.
 //! If a table terminates early, the remaining indexes as well as the page offset are directly mapped to the physical address.
+//!
 use super::size::{PageSize, Size4KiB};
 use bitflags::bitflags;
 use common::addr::PhysAddr;
-use common::memory::MEMORY_INFO;
+use common::memory::get_memory_info;
 use common::sync::CriticalSection;
+use core::num::NonZeroU8;
 use core::ops::{Index, IndexMut};
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -101,14 +103,19 @@ impl From<PageTableIndex> for usize {
 
 /// A page table level
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct PageTableLevel(u8);
+pub struct PageTableLevel(NonZeroU8);
 
 impl PageTableLevel {
+    pub const LEVEL_4: PageTableLevel = unsafe { PageTableLevel::new_unsafe(4) };
+    pub const LEVEL_3: PageTableLevel = unsafe { PageTableLevel::new_unsafe(4) };
+    pub const LEVEL_2: PageTableLevel = unsafe { PageTableLevel::new_unsafe(4) };
+    pub const LEVEL_1: PageTableLevel = unsafe { PageTableLevel::new_unsafe(4) };
+
     /// Create a page table level from an [`u8`].
     /// Panics if the level is unsupported.
     pub fn new(value: u8) -> Self {
-        assert!(value <= MEMORY_INFO.highest_page_table_level);
-        PageTableLevel(value)
+        assert!(value <= get_memory_info().highest_page_table_level);
+        PageTableLevel(NonZeroU8::new(value).unwrap())
     }
 
     /// Create a page table level from an [`u8`], without checking if it's supported.
@@ -117,37 +124,39 @@ impl PageTableLevel {
     ///
     /// This function allows creating page table levels which might not be supported.
     pub const unsafe fn new_unsafe(value: u8) -> Self {
-        PageTableLevel(value)
+        PageTableLevel(NonZeroU8::new_unchecked(value))
     }
 
     /// Returns the highest page table level supported.
     pub fn highest() -> Self {
-        PageTableLevel(MEMORY_INFO.highest_page_table_level)
+        PageTableLevel(unsafe {
+            NonZeroU8::new_unchecked(get_memory_info().highest_page_table_level)
+        })
     }
 
     /// Returns the current page table level as a [`u8`].
     pub const fn as_u8(self) -> u8 {
-        self.0
+        self.0.get()
     }
 
     /// Get the next lower level or `None` if it's the lowest.
     pub const fn next_lower_level(self) -> Option<Self> {
-        match self.0.checked_sub(1) {
+        match self.as_u8().checked_sub(1) {
             None | Some(0) => None,
-            Some(x) => Some(PageTableLevel(x)),
+            Some(x) => Some(PageTableLevel(unsafe { NonZeroU8::new_unchecked(x) })),
         }
     }
 
     pub const fn is_last(self) -> bool {
-        self.0 == 1
+        self.as_u8() == 1
     }
 
     pub const fn address_space_mask(self) -> u64 {
-        (1 << ((self.0 - 1) * 9 + 12)) - 1
+        (1 << ((self.as_u8() - 1) * 9 + 12)) - 1
     }
 
     pub const fn page_table_mask(self) -> u64 {
-        (1 << (self.0 * 9 + 12)) - 1
+        (1 << (self.as_u8() * 9 + 12)) - 1
     }
 }
 
@@ -155,17 +164,19 @@ impl TryFrom<u8> for PageTableLevel {
     type Error = ();
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        if value > MEMORY_INFO.highest_page_table_level {
+        if value > get_memory_info().highest_page_table_level {
             Err(())
+        } else if let Some(x) = NonZeroU8::new(value) {
+            Ok(PageTableLevel(x))
         } else {
-            Ok(PageTableLevel(value))
+            Err(())
         }
     }
 }
 
 impl From<PageTableLevel> for u8 {
     fn from(value: PageTableLevel) -> Self {
-        value.0
+        value.as_u8()
     }
 }
 
@@ -273,7 +284,7 @@ pub enum PageTranslation {
 }
 
 /// An entry in a page table.
-/// Page table entries are 64 bits on all currently supported platforms (x86_64, AArch64, resicv64).
+/// Page table entries are 64 bits on all currently supported platforms (x86_64, AArch64, riscv64).
 /// The make up of these is architecture specific with each having different [`PageTableFlags`].
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -310,7 +321,7 @@ impl PageTableEntry {
     /// This can be a pointer to the next page table or a pointer to a block of memory to be mapped.
     /// Which of these depends on the [`PageTableFlags`] of this entry.
     pub fn addr(&self) -> PhysAddr {
-        let mask = MEMORY_INFO.page_table_entry_address_mask;
+        let mask = get_memory_info().page_table_entry_address_mask;
         PhysAddr::new(self.0 & mask)
     }
 
@@ -402,40 +413,33 @@ impl LockedPageTableEntry {
     /// Returns `Ok` if the entry could be initialized, `Err` if the entry has already been initialized.
     pub fn set(&self, value: PageTableEntry) -> Result<(), PageTableEntry> {
         let _section = CriticalSection::new();
-        match self
-            .0
-            .compare_exchange(0, LOCK_BIT_U64, Ordering::AcqRel, Ordering::Relaxed)
-        {
-            Ok(_) => {
-                self.0.store(value.0, Ordering::Release);
-                Ok(())
-            }
-            Err(_) => Err(value),
+
+        if self.0.fetch_or(LOCK_BIT_U64, Ordering::AcqRel) == 0 {
+            self.0.store(value.0, Ordering::Release);
+            Ok(())
+        } else {
+            Err(value)
         }
     }
 
     /// Initializes the entry using the given function or returns the already initialized value.
     pub fn get_or_init(&self, f: impl FnOnce() -> PageTableEntry) -> PageTableEntry {
         let section = CriticalSection::new();
-        match self
-            .0
-            .compare_exchange(0, LOCK_BIT_U64, Ordering::AcqRel, Ordering::Acquire)
-        {
-            Ok(_) => {
-                let value = f();
-                self.0.store(value.0, Ordering::Release);
-                value
-            }
-            Err(value) => {
-                drop(section);
 
-                let mut value = PageTableEntry(value);
-                while value.flags().contains(LOCK_BIT) {
-                    value = PageTableEntry(self.0.load(Ordering::Acquire));
-                }
+        let value = self.0.fetch_or(LOCK_BIT_U64, Ordering::AcqRel);
+        if value == 0 {
+            let value = f();
+            self.0.store(value.0, Ordering::Release);
+            value
+        } else {
+            drop(section);
 
-                value
+            let mut value = PageTableEntry(value);
+            while value.flags().contains(LOCK_BIT) {
+                value = PageTableEntry(self.0.load(Ordering::Acquire));
             }
+
+            value
         }
     }
 
