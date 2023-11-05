@@ -1,37 +1,35 @@
-# Microdragon
+# Microdragon Kernel
 
-A microkernel written in Rust, trying to bridge the gap between embedded and general operating systems
+> **A microkernel written in Rust, trying to bridge the gap between embedded and general operating systems**
 
-I am currently focusing on x86_64, but definitely want to support AArch64 and riscv too.
+[![License](https://img.shields.io/github/license/Microdragon/Kernel?style=flat-square)](LICENSE)
 
-## Component Overview
+This repo contains the source code of the microdragon kernel, it's built-in modules and bootloader interfaces.
 
-`libs/hpet`
-Library crate for controlling the High Precision Event Timer (HPET) found in most x86_64 platforms. The library is finished and can be used by other kernels too in theory.
+**NOTE:** if you plan on contributing to microdragon, feel free to read [CONTRIBUTING.md](CONTRIBUTING.md) too.
 
-`libs/bootloader`
-Implements struct and type definitions to bootstrap microdragon.
-I plan on switching from the custom bootloader protocol defined in this crate to [Limine](https://github.com/limine-bootloader/limine/blob/trunk/PROTOCOL.md) in the near future.
+## Building from source
 
-`crates/acpi`
-Implements the interaction between the kernel and the Advanced Configuration and Power Interface (ACPI) firmware (The ACPI driver). I try to use as little from ACPI as possible, since most of ACPI should be handled by a userspace service.
+The microdragon kernel is build using [Just](https://github.com/casey/just), a simple command runner that can be installed using cargo:
+> cargo install just
+With just installed, it's as simple as running `just build` to build the kernel binary.
 
-`crates/bootloader_uefi`
-UEFI bootloader for microdragon.
-This implements the bootloader protocol from `libs/bootloader`.
-I plan on switching to [Limine](https://github.com/limine-bootloader/limine/blob/trunk/PROTOCOL.md) in the near future, so this crate will become redundant.
+By default just will do a debug build for x86_64 systems and the limine bootloader.
+This can be caged by passing `<key>=<value>` pairs to just.
+|Key|Default|Description|
+|-|-|-|
+|bootloader|limine|Bootloader to support|
+|target|x86_64-unknown-none|Rust target|
+|release|false|Build as Release?|
 
-`crates/common`
-Common types used by different crates.
-Currently this only contains some constructs for synchronisation between processors.
+## Packaging the kernel
 
-`crates/memory`
-A Memory Management library for x86_64, AArch64 and riscv inspired by the `x86_64` crate.
+The kernel binary alone doesn't get you far, so the next step is to package up the kernel into a `.iso` image.
+Here just comes to help again by running `just pack`, just will build and package your project together with the selected bootloader.
+The resulting `.iso` can be booted by both a legacy bios system as well as a UEFI system.
+**NOTE:** To create the `.iso` a tool called `xorriso` might be needed.
 
-`crates/platform-x86_64`
-The kernel for x86_64 system.
-This crate contains all x86_64 specific code and is getting build when targeting x86_64.
+## Running the kernel in QEMU
 
-`docs`
-An mdBook describing the kernel and it's component.
-It's not quite up to date, but I try my best to keep it relevant for people.
+Finally if you just want to test microdragon out or are tinkering on it, just also provides a `just run_bios` and a `just run_uefi` command.
+It will build, package and then run QEMU for the given target.

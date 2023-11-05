@@ -142,10 +142,9 @@ impl Write for TerminalOutput {
         }
 
         match c {
-            '' => {}
-            '
-' => self.newline(),
-            '' => self.sequence.start(),
+            '\r' => {}
+            '\n' => self.newline(),
+            '\x1b' => self.sequence.start(),
             _ if (c as u32) < 32 => {}
             _ => {
                 if let Some(c) = get_raster(c, FontWeight::Regular, RASTER_HEIGHT) {

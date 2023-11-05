@@ -31,7 +31,7 @@ run_bios: pack
 
 # Runs the kernel in QEMU using UEFI boot (WIP)
 run_uefi: pack
-  {{ qemu_command }} -bios deps/OVMF/OVMF.fd -drive file=microdragon.iso,if=ide
+  {{ qemu_command }} -bios deps/OVMF/OVMF.fd -cdrom microdragon.iso
 
 license:
   #!/bin/sh
@@ -40,7 +40,7 @@ license:
   FILES=`find . -type f -name '*.rs' -not -path './libs/*'`
   for file in $FILES; do
     if [ "$(head -n 1 $file)" != "$TEST" ]; then
-      echo "$NOTICE\n$(cat $file)" > $file
+      echo -E "$NOTICE\n$(cat $file)" > $file
       echo Updated license header for $file
     fi
   done
