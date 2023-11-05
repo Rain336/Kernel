@@ -12,6 +12,7 @@ This repo contains the source code of the microdragon kernel, it's built-in modu
 
 The microdragon kernel is build using [Just](https://github.com/casey/just), a simple command runner that can be installed using cargo:
 > cargo install just
+
 With just installed, it's as simple as running `just build` to build the kernel binary.
 
 By default just will do a debug build for x86_64 systems and the limine bootloader.
