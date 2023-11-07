@@ -16,7 +16,6 @@ use log::debug;
 
 /// Initializes the Kernel Memory Management (KMM) Module.
 pub fn init(iface: &ModuleInterface) {
-    debug!("RIP: {:p}", x86_64::registers::read_rip());
     init_memory_info(iface);
     let size = memory_map::read_memory_map(&iface.memory_map_info);
     mapping::init(size);

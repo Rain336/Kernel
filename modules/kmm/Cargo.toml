@@ -11,6 +11,3 @@ memory = { path = "../../crates/memory" }
 log = { workspace = true }
 spinning_top = { workspace = true }
 limine = { workspace = true }
-
-[target.'cfg(target_arch = "x86_64")'.dependencies]
-x86_64 = { workspace = true }

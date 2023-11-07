@@ -60,7 +60,6 @@ dependencies = [
  "log",
  "memory",
  "spinning_top",
- "x86_64",
 ]
 
 [[package]]

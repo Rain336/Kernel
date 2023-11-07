@@ -1,7 +1,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-use common::addr::{PhysAddr, VirtAddr};
+use common::addr::VirtAddr;
 use core::ptr;
 use log::{debug, info, warn};
 use memory::page_table::PageTable;
@@ -33,23 +33,8 @@ pub fn init(size: u64) {
     direct::init_direct_mapping(size, table);
 
     info!("Switching to kernel page table...");
-    set_root_page_table(root);
+    unsafe { crate::magic::set_root_page_table(root) };
 
     #[cfg(debug_assertions)]
     common::memory::set_initialized();
-}
-
-#[cfg(target_arch = "x86_64")]
-fn set_root_page_table(root: PhysAddr) {
-    use x86_64::registers::control::Cr3;
-    use x86_64::structures::paging::PhysFrame;
-    use x86_64::PhysAddr;
-
-    let (_, flags) = Cr3::read();
-    unsafe {
-        Cr3::write(
-            PhysFrame::containing_address(PhysAddr::new_truncate(root.as_u64())),
-            flags,
-        )
-    };
 }
