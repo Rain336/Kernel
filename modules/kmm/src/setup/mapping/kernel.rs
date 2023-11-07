@@ -15,7 +15,7 @@ pub fn copy_kernel_entries(mut root: &mut PageTable) {
         "Kernel page table already set."
     );
 
-    let mut from = unsafe { &mut *read_root_page_table() };
+    let mut from = unsafe { &mut *get_root_page_table() };
     let mut from_level = PageTableLevel::highest();
     while from_level != PageTableLevel::LEVEL_3 {
         let entry = &mut from[KERNEL_LOAD_START.page_table_index(from_level)];
@@ -99,8 +99,7 @@ fn copy_page_table(from: &mut PageTable, to: &mut PageTable, level: PageTableLev
     }
 }
 
-#[cfg(target_arch = "x86_64")]
-fn read_root_page_table() -> *mut PageTable {
-    let (frame, _) = x86_64::registers::control::Cr3::read();
-    VirtAddr::new_truncate(frame.start_address().as_u64()).as_mut_ptr::<PageTable>()
+fn get_root_page_table() -> *mut PageTable {
+    let address = unsafe { crate::magic::get_root_page_table() }.as_u64();
+    VirtAddr::new_truncate(address).as_mut_ptr::<PageTable>()
 }

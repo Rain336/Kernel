@@ -9,9 +9,10 @@ mod devices;
 mod gdt;
 mod idt;
 mod interrupts;
+mod magic;
 mod registers;
 
-use common::sync::SyncLazy;
+use common::sync::{Interrupts, SyncLazy};
 use interface::ModuleInterface;
 use raw_cpuid::{CpuId, CpuIdReaderNative};
 
@@ -25,5 +26,5 @@ pub fn init(iface: &ModuleInterface) {
     idt::load();
     registers::init();
 
-    x86_64::instructions::interrupts::enable();
+    Interrupts::enable();
 }
