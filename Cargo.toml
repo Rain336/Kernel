@@ -16,3 +16,8 @@ raw-cpuid = "11.0.1"
 uart_16550 = "0.3"
 noto-sans-mono-bitmap = "0.2"
 x86_64 = "0.14.11"
+
+syn = "2.0"
+quote = "1.0"
+toml = "0.8"
+proc-macro2 = "1.0"
