@@ -1,4 +1,4 @@
-use proc_macro::Span;
+use proc_macro2::Span;
 use std::fs;
 use std::sync::OnceLock;
 use syn::Error;
@@ -15,16 +15,23 @@ pub fn get_config() -> syn::Result<&'static Table> {
 
     let file = fs::read_to_string(CONFIG_TOML_PATH).map_err(|err| {
         Error::new(
-            Span::call_site().into(),
+            Span::call_site(),
             format!("Could not read Config.toml: {err}"),
         )
     })?;
     let table = file.parse::<Table>().map_err(|err| {
         Error::new(
-            Span::call_site().into(),
+            Span::call_site(),
             format!("Couldn't parse Config.toml: {err}"),
         )
     })?;
 
     Ok(CACHED_CONFIG.get_or_init(|| table))
+}
+
+#[cfg(test)]
+pub fn set_config(table: Table) {
+    CACHED_CONFIG
+        .set(table)
+        .expect("Config already set by another test.");
 }
