@@ -37,8 +37,24 @@ pub fn get_config() -> syn::Result<&'static Table> {
 
 /// Only used by unit tests to set a `Config.toml` for testing.
 #[cfg(test)]
-pub fn set_config(table: Table) {
-    CACHED_CONFIG
-        .set(table)
-        .expect("Config already set by another test.");
+pub fn set_config() {
+    let _ = CACHED_CONFIG.set(toml::toml! {
+        foo = 5
+        bar.baz = true
+        bar.string = "Hello World"
+        bar.float = 3.1415926535
+
+        [deeply.nested]
+        table.value = false
+        array = [1, 2, 3]
+        table.array = [ { foo = "wow" }, { foo = 4 }, { bar = 69420 } ]
+
+        [dragon]
+        rawr = true
+        size = 255
+        likes = [ "pats", "hugs" ]
+
+        [kobold]
+        shiny = true
+    });
 }

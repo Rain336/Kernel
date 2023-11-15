@@ -5,7 +5,7 @@
 macro_rules! assert_parse {
     ($type:ty, $input:literal) => {
         if let Err(err) = syn::parse_str::<$type>($input) {
-            assert!(false, "Expected parsing to succeed, but got: {err}");
+            panic!("Expected parsing to succeed, but got: {err}");
         }
     };
 }
@@ -13,7 +13,14 @@ macro_rules! assert_parse {
 macro_rules! assert_parse_fail {
     ($type:ty, $input:literal) => {
         if let Ok(result) = syn::parse_str::<$type>($input) {
-            assert!(false, "Expected parsing to fail");
+            panic!("Expected parsing to fail");
         }
+    };
+}
+
+macro_rules! assert_evaluate {
+    ($input:literal, $result:literal) => {
+        let result = syn::parse_str::<ConfigurationPredicate>($input).unwrap();
+        assert_eq!(result.evaluate().unwrap(), $result);
     };
 }

@@ -197,17 +197,7 @@ mod test {
 
     #[test]
     fn test_run() {
-        crate::file::set_config(toml::toml! {
-            foo = 5
-            bar.baz = true
-            bar.string = "Hello World"
-            bar.float = 3.1415926535
-
-            [deeply.nested]
-            table.value = false
-            array = [1, 2, 3]
-            table.array = [ { foo = "wow" }, { foo = 4 }, { bar = 69420 } ]
-        });
+        crate::file::set_config();
 
         assert_run!("foo", LitInt::new("5", Span::call_site()));
         assert_run!("bar.baz", LitBool::new(true, Span::call_site()));

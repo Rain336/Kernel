@@ -32,6 +32,10 @@ impl Parse for ConfigurationAll {
 
 impl EvaluatePredicate for ConfigurationAll {
     fn evaluate(&self) -> syn::Result<bool> {
+        if self.inner.is_empty() {
+            return Ok(false);
+        }
+
         for predicate in &self.inner {
             if !predicate.evaluate()? {
                 return Ok(false);

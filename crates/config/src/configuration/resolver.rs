@@ -18,19 +18,27 @@ enum TableOrArray<'a> {
 impl<'a> TableOrArray<'a> {
     /// Gets the value corresponding to the given segment string from the inner table or array.
     fn get(self, segment: &OptionSegment) -> syn::Result<Option<&'a Value>> {
-        let value = match segment {
-            OptionSegment::Ident(ident) => ident.to_string(),
-            OptionSegment::String(str) => str.value(),
-        };
-
         Ok(match self {
-            TableOrArray::Table(x) => x.get(&value),
-            TableOrArray::Array(x) => x.get(value.parse::<usize>().map_err(|err| {
-                syn::Error::new(
-                    segment.span(),
-                    format!("Could not convert key segment '{value}' into an array index: {err}"),
-                )
-            })?),
+            TableOrArray::Table(x) => match segment {
+                OptionSegment::Ident(ident) => x.get(&ident.to_string()),
+                OptionSegment::String(str) => x.get(&str.value()),
+                OptionSegment::Int(int) => x.get(int.base10_digits()),
+            },
+            TableOrArray::Array(x) => match segment {
+                OptionSegment::Int(int) => {
+                    let index = int.base10_parse::<usize>().map_err(|err| syn::Error::new(
+                        segment.span(),
+                        format!("Could not convert key segment '{}' into an array index, got error: {}", int.base10_digits(), err),
+                    ))?;
+                    x.get(index)
+                }
+                _ => {
+                    return Err(syn::Error::new(
+                        segment.span(),
+                        "Expected an array index at this key segment",
+                    ));
+                }
+            },
         })
     }
 }

@@ -64,3 +64,33 @@ impl EvaluatePredicate for ConfigurationPredicate {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{ConfigurationPredicate, EvaluatePredicate};
+    use crate::macros::*;
+
+    #[test]
+    fn test_evaluate() {
+        assert_evaluate!("any()", false);
+        assert_evaluate!("all()", false);
+        assert_evaluate!("not(any())", true);
+        assert_evaluate!("any(all(), not(any()), any())", true);
+        assert_evaluate!("all(all(), not(any()), any())", false);
+        assert_evaluate!("all(not(any()), not(all()))", true);
+
+        crate::file::set_config();
+
+        assert_evaluate!("dragon.rawr", true);
+        assert_evaluate!("dragon.rawr = true", true);
+        assert_evaluate!("dragon.size = 255", true);
+        assert_evaluate!("dragon.size = 15", false);
+        assert_evaluate!("all(dragon.rawr, dragon.size = 20)", false);
+        assert_evaluate!("any(dragon.rawr, dragon.size = 20)", true);
+        assert_evaluate!(
+            "all(dragon.likes.0 = \"pats\", dragon.likes.1 = \"hugs\")",
+            true
+        );
+        assert_evaluate!("all(dragon.rawr, any(kobold.shiny, dragon.size = 5))", true);
+    }
+}
