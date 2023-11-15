@@ -46,13 +46,6 @@ dependencies = [
 name = "config"
 version = "0.0.0"
 dependencies = [
- "config_macros",
-]
-
-[[package]]
-name = "config_macros"
-version = "0.0.0"
-dependencies = [
  "proc-macro2",
  "quote",
  "syn",

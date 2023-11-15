@@ -1,12 +1,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-use crate::{file, ConfigQuery};
+use super::ValueMacroInput;
+use crate::file;
 use proc_macro2::Span;
 use syn::{Error, Expr, ExprLit, LitBool, LitFloat, LitInt, LitStr};
 use toml::value::Array;
 use toml::{Table, Value};
 
+/// Helper enum to transparently traverse an array or table.
 #[derive(Clone, Copy)]
 enum TableOrArray<'a> {
     Table(&'a Table),
@@ -14,6 +16,7 @@ enum TableOrArray<'a> {
 }
 
 impl<'a> TableOrArray<'a> {
+    /// Gets the value corresponding to the given segment string from the inner table or array.
     fn get(self, segment: &str) -> syn::Result<Option<&'a Value>> {
         Ok(match self {
             TableOrArray::Table(x) => x.get(segment),
@@ -36,10 +39,11 @@ macro_rules! ret {
     };
 }
 
-pub fn run(query: ConfigQuery) -> syn::Result<Expr> {
+/// Tries to resolve the given `query` to an [`Expr`].
+pub fn run(query: ValueMacroInput) -> syn::Result<Expr> {
     let table = file::get_config()?;
     let key = query.option.value();
-    let parsed = parse_query(&key)?;
+    let parsed = parse_query(&key, query.option.span())?;
     let last = parsed.len() - 1;
 
     let mut current = TableOrArray::Table(table);
@@ -65,7 +69,7 @@ pub fn run(query: ConfigQuery) -> syn::Result<Expr> {
                 Value::Table(x) => current = TableOrArray::Table(x),
                 _ => {
                     return Err(Error::new(
-                        Span::call_site(),
+                        query.option.span(),
                         format!("Key '{key}' hat at '{segment}' a non-Table / non-Array value"),
                     ))
                 }
@@ -75,7 +79,7 @@ pub fn run(query: ConfigQuery) -> syn::Result<Expr> {
                     Some(x) => Ok(x),
                     None => {
                         return Err(Error::new(
-                            Span::call_site(),
+                            query.option.span(),
                             format!("Key '{key}' has no value in the Config.toml"),
                         ))
                     }
@@ -85,19 +89,20 @@ pub fn run(query: ConfigQuery) -> syn::Result<Expr> {
     }
 
     Err(Error::new(
-        Span::call_site(),
+        query.option.span(),
         format!("Key '{key}' resolves to a table or Array"),
     ))
 }
 
-fn parse_query(mut query: &str) -> syn::Result<Vec<&str>> {
+/// Parses a TOML key string into a list of segments.
+fn parse_query(mut query: &str, span: Span) -> syn::Result<Vec<&str>> {
     let mut result = Vec::new();
 
     while !query.is_empty() {
         if query.starts_with('"') {
-            query = parse_until(&query[1..], &mut result, '"')?;
+            query = parse_until(&query[1..], &mut result, '"', span)?;
         } else if query.starts_with('\'') {
-            query = parse_until(&query[1..], &mut result, '\'')?;
+            query = parse_until(&query[1..], &mut result, '\'', span)?;
         } else if let Some(idx) = query.find('.') {
             result.push(&query[..idx]);
 
@@ -112,17 +117,16 @@ fn parse_query(mut query: &str) -> syn::Result<Vec<&str>> {
     Ok(result)
 }
 
+/// Parses from `query` until a given `end` char and interprets it as one segment, appending it to `result`.
 fn parse_until<'a>(
     mut query: &'a str,
     result: &mut Vec<&'a str>,
     end: char,
+    span: Span,
 ) -> syn::Result<&'a str> {
-    let idx = query.find(end).ok_or_else(|| {
-        Error::new(
-            Span::call_site(),
-            "Quoted key is missing ending quote".to_string(),
-        )
-    })?;
+    let idx = query
+        .find(end)
+        .ok_or_else(|| Error::new(span, "Quoted key is missing ending quote".to_string()))?;
     result.push(&query[..idx]);
 
     query = &query[idx + 1..];
@@ -130,7 +134,7 @@ fn parse_until<'a>(
     if !query.is_empty() {
         if !matches!(query.bytes().next(), Some(b'.')) {
             return Err(Error::new(
-                Span::call_site(),
+                span,
                 "Expected '.' after quoted key".to_string(),
             ));
         }
@@ -144,9 +148,9 @@ fn parse_until<'a>(
 #[cfg(test)]
 mod test {
     use super::{parse_query, run};
-    use crate::query::ConfigQuery;
+    use crate::value::ValueMacroInput;
     use proc_macro2::Span;
-    use syn::{Expr, LitStr, LitInt, LitBool, LitFloat, ExprLit};
+    use syn::{Expr, ExprLit, LitBool, LitFloat, LitInt, LitStr};
 
     macro_rules! assert_run {
         (default $input:expr, $default:expr) => {
@@ -154,16 +158,17 @@ mod test {
                 attrs: Vec::new(),
                 lit: ($default).into(),
             });
-            let result = run(ConfigQuery {
+            let result = run(ValueMacroInput {
                 option: LitStr::new($input, Span::call_site()),
                 comma: None,
                 default: Some(default.clone()),
-            }).unwrap();
+            })
+            .unwrap();
 
             assert_eq!(result, default);
         };
         (fail $input:expr) => {
-            let result = run(ConfigQuery {
+            let result = run(ValueMacroInput {
                 option: LitStr::new($input, Span::call_site()),
                 comma: None,
                 default: None,
@@ -174,16 +179,17 @@ mod test {
             }
         };
         ($input:expr, $result:expr) => {
-            let result = run(ConfigQuery {
+            let result = run(ValueMacroInput {
                 option: LitStr::new($input, Span::call_site()),
                 comma: None,
                 default: None,
-            }).unwrap();
+            })
+            .unwrap();
 
             let Expr::Lit(result) = result else {
-                assert!(false, "Resolved expr is not a literal.");
-                unreachable!()
-            };
+                                        assert!(false, "Resolved expr is not a literal.");
+                                        unreachable!()
+                                    };
 
             assert_eq!(result.lit, ($result).into());
         };
@@ -206,29 +212,41 @@ mod test {
         assert_run!("foo", LitInt::new("5", Span::call_site()));
         assert_run!("bar.baz", LitBool::new(true, Span::call_site()));
         assert_run!("bar.string", LitStr::new("Hello World", Span::call_site()));
-        assert_run!("bar.float", LitFloat::new("3.1415926535", Span::call_site()));
-        assert_run!("deeply.nested.table.value", LitBool::new(false, Span::call_site()));
+        assert_run!(
+            "bar.float",
+            LitFloat::new("3.1415926535", Span::call_site())
+        );
+        assert_run!(
+            "deeply.nested.table.value",
+            LitBool::new(false, Span::call_site())
+        );
         assert_run!("deeply.nested.array.1", LitInt::new("2", Span::call_site()));
-        assert_run!("deeply.nested.table.array.0.foo", LitStr::new("wow", Span::call_site()));
-        assert_run!("deeply.nested.table.array.2.bar", LitInt::new("69420", Span::call_site()));
+        assert_run!(
+            "deeply.nested.table.array.0.foo",
+            LitStr::new("wow", Span::call_site())
+        );
+        assert_run!(
+            "deeply.nested.table.array.2.bar",
+            LitInt::new("69420", Span::call_site())
+        );
 
         assert_run!(fail "bar");
         assert_run!(fail "deeply.nested");
         assert_run!(fail "deeply.nested.array");
         assert_run!(fail "deeply.nested.table.array");
-        
+
         assert_run!(default "missing", LitStr::new("Rawr", Span::call_site()));
         assert_run!(default "missing.nested.key", LitStr::new("Yip", Span::call_site()));
     }
 
     macro_rules! assert_query {
         (fail $input:expr) => {
-            if let Ok(segments) = parse_query($input) {
+            if let Ok(segments) = parse_query($input, Span::call_site()) {
                 assert!(false, "Expected parsing to fail, but got: {:?}", segments);
             }
         };
         ($input:expr, $( $output:expr ),* $(,)?) => {
-            let segments = parse_query($input).unwrap();
+            let segments = parse_query($input, Span::call_site()).unwrap();
             assert_eq!(segments, vec![$( $output ),*]);
         };
     }

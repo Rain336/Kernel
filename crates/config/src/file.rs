@@ -7,10 +7,13 @@ use std::sync::OnceLock;
 use syn::Error;
 use toml::Table;
 
+/// Path to the `Config.toml`
 const CONFIG_TOML_PATH: &str = "Config.toml";
 
+/// Statically cached and parsed `Config.toml` as a TOML [`Table`].
 static CACHED_CONFIG: OnceLock<Table> = OnceLock::new();
 
+/// Loads the `Config.toml` from the filesystem or returns a cached instance.
 pub fn get_config() -> syn::Result<&'static Table> {
     if let Some(table) = CACHED_CONFIG.get() {
         return Ok(table);
@@ -25,13 +28,14 @@ pub fn get_config() -> syn::Result<&'static Table> {
     let table = file.parse::<Table>().map_err(|err| {
         Error::new(
             Span::call_site(),
-            format!("Couldn't parse Config.toml: {err}"),
+            format!("Could not parse Config.toml: {err}"),
         )
     })?;
 
     Ok(CACHED_CONFIG.get_or_init(|| table))
 }
 
+/// Only used by unit tests to set a `Config.toml` for testing.
 #[cfg(test)]
 pub fn set_config(table: Table) {
     CACHED_CONFIG
