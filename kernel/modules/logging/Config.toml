@@ -1,0 +1,83 @@
+# Setings for serial port logging
+[serial]
+
+# Allows disabling serial port logging.
+enabled = true
+
+# Specifies the I/O port nummber to use for serial on x86_64 architecture.
+port = 0x3F8
+
+# Setings for terminal framebuffer logging
+[terminal]
+
+# Allows disabling terminal framebuffer logging.
+enabled = true
+
+# Amount of pixels to leave free around the screen border.
+border_padding = 1
+
+# Amount of empty pixels between each terminal line.
+line_spacing = 2
+
+# TODO: 
+#raster_hight = 16
+#font_weight = 0 - Regular
+
+# Configures the theme of the terminal framebuffer.
+[terminal.theme]
+
+# The default foreground color used for text.
+# Color should be in RGB
+default_foreground = 0xCCCCCC
+
+# The default background color used for text.
+# Color should be in RGB
+default_background = 0x0C0C0C
+
+# Color should be in RGB
+black = 0x0C0C0C
+
+# Color should be in RGB
+red = 0xC50F1F
+
+# Color should be in RGB
+green = 0x13A10E
+
+# Color should be in RGB
+yellow = 0xC19C00
+
+# Color should be in RGB
+blue = 0x0037DA
+
+# Color should be in RGB
+magenta = 0x881798
+
+# Color should be in RGB
+cyan = 0x3A96DD
+
+# Color should be in RGB
+white = 0xCCCCCC
+
+# Color should be in RGB
+bright_black = 0x767676
+
+# Color should be in RGB
+bright_red = 0xE74856
+
+# Color should be in RGB
+bright_green = 0x16C60C
+
+# Color should be in RGB
+bright_yellow = 0xF9F1A5
+
+# Color should be in RGB
+bright_blue = 0x3B78FF
+
+# Color should be in RGB
+bright_magenta = 0xB4009E
+
+# Color should be in RGB
+bright_cyan = 0x61D6D6
+
+# Color should be in RGB
+bright_white = 0xF2F2F2
