@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["bootloader/*", "crates/*", "libs/*", "modules/*"]
+members = ["bootloader/*", "crates/*", "libs/*", "modules/*", "xtask"]
 
 [workspace.package]
 version = "0.0.0"
@@ -8,8 +8,11 @@ edition = "2021"
 publish = false
 
 [workspace.dependencies]
+# Kernel Dependencies
 limine = "0.1.11"
+bootloader_api = "0.11.4"
 spinning_top = "0.3.0"
+interrupts = "0.1"
 bitflags = "2.4.1"
 log = "0.4.20"
 raw-cpuid = "11.0.1"
@@ -17,7 +20,18 @@ uart_16550 = "0.3"
 noto-sans-mono-bitmap = "0.2"
 x86_64 = "0.14.11"
 
+# Proc-macro Dependencies
 syn = "2.0"
 quote = "1.0"
 toml = "0.8"
 proc-macro2 = "1.0"
+
+# xtask Dependencies
+color-eyre = "0.6"
+clap = "4.4"
+xshell = "0.2"
+serde = "1.0"
+serde_json = "1.0"
+fatfs = "0.3"
+ureq = "2.8"
+ignore = "0.4"

@@ -1,0 +1,9 @@
+[package]
+name = "microdragon-rust"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+runner = { path = "../../modules/runner" }
+bootloader_api = { workspace = true }

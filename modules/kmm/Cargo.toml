@@ -11,3 +11,4 @@ memory = { path = "../../crates/memory" }
 log = { workspace = true }
 spinning_top = { workspace = true }
 limine = { workspace = true }
+bootloader_api = { workspace = true }

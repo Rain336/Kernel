@@ -1,15 +1,15 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-use core::slice;
-
 use common::addr::PhysAddr;
 use common::memory::physical_to_virtual;
+use core::ptr;
 
 pub const LINE_SPACING: usize = 2;
 
 pub struct Framebuffer {
-    buffer: &'static mut [u8],
+    buffer: *mut u8,
+    size: usize,
     red_shift: u8,
     green_shift: u8,
     blue_shift: u8,
@@ -19,7 +19,8 @@ pub struct Framebuffer {
 
 impl Framebuffer {
     pub fn new(
-        buffer: &'static mut [u8],
+        buffer: *mut u8,
+        size: usize,
         red_shift: u8,
         green_shift: u8,
         blue_shift: u8,
@@ -28,6 +29,7 @@ impl Framebuffer {
     ) -> Self {
         Framebuffer {
             buffer,
+            size,
             red_shift,
             green_shift,
             blue_shift,
@@ -38,11 +40,8 @@ impl Framebuffer {
 
     /// Updates the buffer address to the new memory model.
     pub fn rewire(&mut self) {
-        let ptr = PhysAddr::new_truncate(self.buffer.as_ptr() as u64);
-        let ptr = physical_to_virtual(ptr).as_mut_ptr::<u8>();
-        // SAFETY: since the existing buffer was valid and the new buffer just points to the same physical memory,
-        // creating a slice like this should work. The original address is inaccessible and will fault on read/write.
-        self.buffer = unsafe { slice::from_raw_parts_mut(ptr, self.buffer.len()) };
+        let ptr = PhysAddr::new_truncate(self.buffer as u64);
+        self.buffer = physical_to_virtual(ptr).as_mut_ptr::<u8>();
     }
 
     /// Encodes a red, green and blue color value into a combined [`u32`].
@@ -53,22 +52,28 @@ impl Framebuffer {
             | self.reserved_mask
     }
 
-    /// Scrolls the framebuffer up.
-    pub fn scroll(&mut self, max_columns: usize) {
-        let start = self.pitch as usize + LINE_SPACING;
-        let end = (max_columns - 1) * start;
-
-        // we need to copy everything up in the buffer
-        self.buffer.copy_within(start..end, 0);
-
-        // and clear the last row, to remove artifacts.
-        self.buffer[end..].fill(12);
-    }
-
     /// Sets a pixel at position x, y to the given color.
     /// The color needs to be encoded with `encode_color` first.
     pub fn set_pixel(&mut self, x: usize, y: usize, color: u32) {
         let index = (y * self.pitch as usize) + (x * 4);
-        self.buffer[index..(index + 4)].copy_from_slice(&color.to_ne_bytes());
+        let color = color.to_ne_bytes();
+
+        unsafe { ptr::copy_nonoverlapping(color.as_ptr(), self.buffer.add(index), color.len()) };
+    }
+
+    /// Sets all pixels starting at the given y coordinates until the end of the buffer to the default background color.
+    pub fn clear_pixels(&mut self, y: usize) {
+        let y = y * self.pitch as usize;
+        unsafe { ptr::write_bytes(self.buffer.add(y), 12, self.size - y) };
+    }
+
+    /// Copies the given amount of pixels at index `from` to index `to`.
+    pub fn copy_pixels(&mut self, from_y: usize, to_y: usize, size: usize) {
+        let from_y = from_y * self.pitch as usize;
+        let to_y = to_y * self.pitch as usize;
+        let size = size * self.pitch as usize;
+        unsafe { ptr::copy(self.buffer.add(from_y), self.buffer.add(to_y), size) };
     }
 }
+
+unsafe impl Send for Framebuffer {}

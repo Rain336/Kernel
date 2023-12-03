@@ -18,16 +18,17 @@
 mod escape;
 mod framebuffer;
 mod position;
+#[cfg(target_arch = "x86_64")]
 mod serial;
 mod terminal;
 mod theme;
 
 use crate::terminal::TERMINAL_OUTPUT;
-use common::sync::{CriticalSection, Spinlock};
+use common::interrupts;
+use common::sync::Spinlock;
 use core::fmt::Write;
 use interface::ModuleInterface;
 use log::{info, Level, LevelFilter, Log, Metadata, Record};
-use serial::SERIAL_PORT_OUTPUT;
 
 /// The central [`log::Log`] implementation.
 /// There can only be one active Log implementation,
@@ -44,18 +45,19 @@ impl Log for LoggingSubsystem {
     fn log(&self, record: &Record) {
         // Pre-format the level text.
         let level = match record.level() {
-            Level::Error => "[91mERROR[39m",
-            Level::Warn => "[93m WARN[39m",
-            Level::Info => "[92m INFO[39m",
-            Level::Debug => "[94mDEBUG[39m",
-            Level::Trace => "[95mTRACE[39m",
+            Level::Error => "\x1B[91mERROR\x1B[39m",
+            Level::Warn => "\x1B[93m WARN\x1B[39m",
+            Level::Info => "\x1B[92m INFO\x1B[39m",
+            Level::Debug => "\x1B[94mDEBUG\x1B[39m",
+            Level::Trace => "\x1B[95mTRACE\x1B[39m",
         };
 
         // Start a critical section, since interrupts might log too.
-        let _section = CriticalSection::new();
+        let _guard = interrupts::disable();
 
         // Write to logger outputs.
-        write_to_output(&SERIAL_PORT_OUTPUT, level, record);
+        #[cfg(target_arch = "x86_64")]
+        write_to_output(&serial::SERIAL_PORT_OUTPUT, level, record);
         write_to_output(&TERMINAL_OUTPUT, level, record);
     }
 
@@ -68,7 +70,8 @@ static INSTANCE: LoggingSubsystem = LoggingSubsystem;
 /// Interrupts should still be disables while this is run.
 pub fn init(iface: &ModuleInterface) {
     // Run the initialization sequence for the logging outputs.
-    SERIAL_PORT_OUTPUT.lock().init();
+    #[cfg(target_arch = "x86_64")]
+    serial::SERIAL_PORT_OUTPUT.lock().init();
 
     if let Some(fb) = &iface.framebuffer_info {
         TERMINAL_OUTPUT.lock().init(fb);

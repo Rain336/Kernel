@@ -1,7 +1,6 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-use super::CriticalSection;
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
@@ -49,7 +48,7 @@ impl<T> SyncOnceCell<T> {
 
     /// Tries to initialize the call to `value`, return `Ok(())` on success, `Err(value)` otherwise.
     pub fn set(&self, value: T) -> Result<(), T> {
-        let _section = CriticalSection::new();
+        let _guard = interrupts::disable();
         match self.once.compare_exchange(
             UNINITIALIZED,
             INITIALIZING,
@@ -67,7 +66,7 @@ impl<T> SyncOnceCell<T> {
 
     /// Gets the initialized value of the once cell, if it hasn't been initialized, otherwise calls the given function to initialize it.
     pub fn get_or_init(&self, f: impl FnOnce() -> T) -> &T {
-        let _section = CriticalSection::new();
+        let _guard = interrupts::disable();
         loop {
             match self.once.compare_exchange_weak(
                 UNINITIALIZED,

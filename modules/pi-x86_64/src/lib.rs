@@ -12,7 +12,7 @@ mod interrupts;
 mod magic;
 mod registers;
 
-use common::sync::{Interrupts, SyncLazy};
+use common::sync::SyncLazy;
 use interface::ModuleInterface;
 use raw_cpuid::{CpuId, CpuIdReaderNative};
 
@@ -26,5 +26,5 @@ pub fn init(iface: &ModuleInterface) {
     idt::load();
     registers::init();
 
-    Interrupts::enable();
+    common::interrupts::enable();
 }

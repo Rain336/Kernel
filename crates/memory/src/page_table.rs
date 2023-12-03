@@ -13,8 +13,8 @@
 use super::size::{PageSize, Size4KiB};
 use bitflags::bitflags;
 use common::addr::PhysAddr;
+use common::interrupts;
 use common::memory::get_memory_info;
-use common::sync::CriticalSection;
 use core::num::NonZeroU8;
 use core::ops::{Index, IndexMut};
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -272,12 +272,56 @@ bitflags! {
     }
 }
 
-// bitflags! {
-//     pub struct PageTableFlags: u64 {
-//         const VALID = 1;
-//         const TABLE_DESCRIPTOR = 1 << 1;
-//     }
-// }
+#[cfg(target_arch = "aarch64")]
+bitflags! {
+    /// Flags used to control a page table entry.
+    ///
+    /// AArch64 provides two different sets of attributes, depending on if this entry is a Block or a Table.
+    /// Block entries point directly to a block of memory that should be mapped, similar to huge pages on x86_64.
+    /// Table entries point to a lower page table.
+    /// Each attribute specifies if they are 'Block only', 'Table only' or 'Both'
+    pub struct PageTableFlags: u64 {
+        /// Must be set for the entry to be valid, otherwise the entry is ignored.
+        /// Type: Both
+        const VALID = 1 << 0;
+
+        /// If set, this entry is a Table entry, otherwise it is a Block entry. See struct docs for more info.
+        /// Type: Both
+        const TABLE_OR_BLOCK = 1 << 1;
+
+        /// Prevents execution from EL0 in the mapped region.
+        /// Type: Block only
+        const UNPRIVILEGED_EXECUTE_NEVER = 1 << 54;
+
+        /// Prevents execution from EL1 in the mapped region.
+        /// Type: Block only
+        const PRIVILEGED_EXECUTE_NEVER = 1 << 53;
+
+        /// Indicates that this entry is part of a contiguous set of entries that can be cached together.
+        /// Type: Block only
+        const CONTIGUOUS = 1 << 52;
+
+        /// Determines whether the TLB entry applies to all ASID values, or only to the current ASID value.
+        /// Type: Block only
+        const NOT_GLOBAL = 1 << 11;
+        
+        /// 
+        /// Type: Block only
+        const ACCESS_FLAG = 1 << 10;
+
+        /// 
+        /// Type: Block only
+        const SHAREABILITY_FLAG = 1 << 10;
+
+        /// 
+        /// Type: Block only
+        const ACCESS_PERMISSIONS = 1 << 10;
+
+        /// 
+        /// Type: Block only
+        const NOT_SECURE = 1 << 5;
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum PageTranslation {
@@ -415,7 +459,7 @@ impl LockedPageTableEntry {
     /// Initializes the entry to the given value.
     /// Returns `Ok` if the entry could be initialized, `Err` if the entry has already been initialized.
     pub fn set(&self, value: PageTableEntry) -> Result<(), PageTableEntry> {
-        let _section = CriticalSection::new();
+        let _guard = interrupts::disable();
 
         if self.0.fetch_or(LOCK_BIT_U64, Ordering::AcqRel) == 0 {
             self.0.store(value.0, Ordering::Release);
@@ -427,7 +471,7 @@ impl LockedPageTableEntry {
 
     /// Initializes the entry using the given function or returns the already initialized value.
     pub fn get_or_init(&self, f: impl FnOnce() -> PageTableEntry) -> PageTableEntry {
-        let section = CriticalSection::new();
+        let guard = interrupts::disable();
 
         let value = self.0.fetch_or(LOCK_BIT_U64, Ordering::AcqRel);
         if value == 0 {
@@ -435,7 +479,7 @@ impl LockedPageTableEntry {
             self.0.store(value.0, Ordering::Release);
             value
         } else {
-            drop(section);
+            drop(guard);
 
             let mut value = PageTableEntry(value);
             while value.flags().contains(LOCK_BIT) {

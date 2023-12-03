@@ -1,13 +1,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-use runner::interface::StackInfo;
-
-/// The size of the kernel's primary stacks in bytes.
-pub const PRIMARY_STACK_SIZE: usize = 64 * 1024;
-
-/// The size of the kernel's secondary stacks in bytes.
-pub const SECONDARY_STACK_SIZE: usize = 16 * 1024;
+use runner::interface::{StackInfo, PRIMARY_STACK_SIZE, SECONDARY_STACK_SIZE};
 
 /// The kernel's primary stack for the bootstrap processor.
 static mut BOOTSTRAP_PRIMARY_STACK: &mut [u8] = &mut [0; PRIMARY_STACK_SIZE];
@@ -24,9 +18,7 @@ pub fn get_stack_info() -> StackInfo {
     unsafe {
         StackInfo {
             primary_stack: BOOTSTRAP_PRIMARY_STACK.as_ptr() as u64,
-            primary_stack_len: PRIMARY_STACK_SIZE,
             secondary_stack: BOOTSTRAP_SECONDARY_STACK.as_ptr() as u64,
-            secondary_stack_len: SECONDARY_STACK_SIZE,
         }
     }
 }

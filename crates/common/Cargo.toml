@@ -6,3 +6,4 @@ publish.workspace = true
 
 [dependencies]
 spinning_top = { workspace = true }
+interrupts = { workspace = true }

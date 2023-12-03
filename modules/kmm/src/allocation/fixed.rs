@@ -10,7 +10,7 @@
 //!
 use alloc::boxed::Box;
 use common::addr::VirtAddr;
-use common::sync::CriticalSection;
+use common::interrupts;
 use core::ptr;
 use core::sync::atomic::{AtomicPtr, AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering};
 
@@ -121,7 +121,7 @@ macro_rules! fixed_allocator {
 
             /// Returns the bookkeeping struct of the next page or allocates a new page with bookkeeping struct.
             fn get_or_create_next(&self) -> &FixedAllocator<$atomic> {
-                let section = CriticalSection::new(); // This function can deadlock, so we start a critical section.
+                let guard = interrupts::disable(); // This function can deadlock, so we start a critical section.
 
                 match self.next.compare_exchange(
                     ptr::null_mut(),
@@ -167,7 +167,7 @@ macro_rules! fixed_allocator {
                     Err(mut current) => {
                         // If we didn't manage to set the pointer to UPDATING (someone else got the lock),
                         // we first drop the critical section, since we can't deadlock anymore and might be about to spin loop
-                        drop(section);
+                        drop(guard);
 
                         // Now we spin loop and check if the lock has been released.
                         while current as usize == UPDATING {

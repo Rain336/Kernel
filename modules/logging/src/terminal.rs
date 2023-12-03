@@ -6,7 +6,7 @@ use crate::framebuffer::{Framebuffer, LINE_SPACING};
 use crate::position::Position;
 use common::sync::{Spinlock, SyncLazy};
 use core::fmt::Write;
-use core::{ptr, slice};
+use core::ptr;
 use interface::FramebufferInfo;
 use noto_sans_mono_bitmap::{
     get_raster, get_raster_width, FontWeight, RasterHeight, RasterizedChar,
@@ -58,7 +58,8 @@ impl TerminalOutput {
         // since buffer is set after this line, preventing subsequent runs.
         // This means there will only be one instance of this slice in the whole program.
         self.framebuffer = Some(Framebuffer::new(
-            unsafe { slice::from_raw_parts_mut(info.address, info.size) },
+            info.address,
+            info.size,
             info.red_mask_shift,
             info.green_mask_shift,
             info.blue_mask_shift,
@@ -113,7 +114,15 @@ impl TerminalOutput {
     fn newline(&mut self) {
         if self.position.newline() {
             if let Some(fb) = &mut self.framebuffer {
-                fb.scroll(self.position.max_columns())
+                fb.copy_pixels(
+                    BORDER_PADDING + RASTER_HEIGHT.val() + LINE_SPACING,
+                    BORDER_PADDING,
+                    self.position.max_columns() * (RASTER_HEIGHT.val() + LINE_SPACING),
+                );
+                fb.clear_pixels(
+                    BORDER_PADDING
+                        + (self.position.max_columns() * (RASTER_HEIGHT.val() + LINE_SPACING)),
+                );
             }
         }
     }

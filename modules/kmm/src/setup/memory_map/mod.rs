@@ -7,8 +7,11 @@
 //! The boot loader provides the memory map in different formats, each having a separate sub-module to this one.
 //!
 mod limine;
+mod rust;
 
 use interface::{MemoryMapInfo, MemoryMapType};
+
+const RESERVED_AREA: u64 = 1024 * 1024;
 
 /// Reads in the memory map from the boot loader, passes the free regions to the PMM and returns the highest physical memory address.
 pub fn read_memory_map(map: &MemoryMapInfo) -> u64 {
@@ -19,5 +22,6 @@ pub fn read_memory_map(map: &MemoryMapInfo) -> u64 {
 
     match map.memory_map_type {
         MemoryMapType::Limine => limine::read_limine_memory_map(map),
+        MemoryMapType::Rust => rust::read_rust_memory_map(map),
     }
 }

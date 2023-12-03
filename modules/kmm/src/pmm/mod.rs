@@ -7,7 +7,8 @@
 //! The current implementation uses a list of free memory regions behind a mutex.
 //!
 use common::addr::PhysAddr;
-use common::sync::{CriticalSection, SyncOnceCell};
+use common::sync::SyncOnceCell;
+use common::interrupts;
 use core::ptr::NonNull;
 use core::slice;
 use log::error;
@@ -87,7 +88,7 @@ pub fn is_initialized() -> bool {
 /// Allocates a singe physical frame.
 /// Returns `null` if the allocation fails.
 pub fn allocate() -> PhysFrame {
-    let _section = CriticalSection::new();
+    let _section = interrupts::disable();
     let Some(mut guard) = INSTANCE.get().map(|x| x.lock()) else {
         return PhysFrame::containing_address(PhysAddr::zero());
     };
@@ -123,7 +124,7 @@ pub fn allocate() -> PhysFrame {
 pub fn allocate_block(frames: usize) -> PhysAddr {
     let bytes = frames as u64 * 4096;
 
-    let _section = CriticalSection::new();
+    let _section = interrupts::disable();
     let Some(mut guard) = INSTANCE.get().map(|x| x.lock()) else {
         return PhysAddr::zero();
     };
@@ -159,7 +160,7 @@ pub fn free(frame: PhysFrame) {
     let start = frame.start_address().as_u64();
     let end = start + 4096;
 
-    let _section = CriticalSection::new();
+    let _section = interrupts::disable();
     let Some(mut guard) = INSTANCE.get().map(|x| x.lock()) else {
         return;
     };
@@ -183,7 +184,7 @@ pub fn free_block(address: PhysAddr, frames: usize) {
     let start = address.as_u64();
     let end = start + bytes;
 
-    let _section = CriticalSection::new();
+    let _section = interrupts::disable();
     let Some(mut guard) = INSTANCE.get().map(|x| x.lock()) else {
         return;
     };

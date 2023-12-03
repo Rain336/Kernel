@@ -8,6 +8,12 @@
 //!
 #![no_std]
 
+/// The size of the kernel's primary stacks in bytes.
+pub const PRIMARY_STACK_SIZE: usize = 64 * 1024;
+
+/// The size of the kernel's secondary stacks in bytes.
+pub const SECONDARY_STACK_SIZE: usize = 16 * 1024;
+
 /// Interface to be used bt the different kernel modules.
 pub struct ModuleInterface {
     /// Provides info about the kernel's stacks.
@@ -31,14 +37,8 @@ pub struct StackInfo {
     /// Pointer to the kernel's primary stack.
     pub primary_stack: u64,
 
-    /// Length to the kernel's primary stack, in bytes.
-    pub primary_stack_len: usize,
-
     /// Pointer to the kernel's secondary stack.
     pub secondary_stack: u64,
-
-    /// Length to the kernel's secondary stack, in bytes.
-    pub secondary_stack_len: usize,
 }
 
 /// Provides info about a framebuffer.
@@ -56,7 +56,7 @@ pub struct FramebufferInfo {
     /// The height of the frmebuffer screen.
     pub height: u64,
 
-    /// The about of bytes that make up one row.
+    /// The amount of bytes that make up one row.
     pub pitch: u64,
 
     /// Amount to shift the 8-bit red color part by.
@@ -86,6 +86,9 @@ pub struct MemoryMapInfo {
 pub enum MemoryMapType {
     /// The memory map is an array of Limine MemmapEntry structs.
     Limine,
+
+    /// The memory map is an array of Rust Bootloader MemoryRegion structs.
+    Rust,
 }
 
 /// Information about the MMU of this system.

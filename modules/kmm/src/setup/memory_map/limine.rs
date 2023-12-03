@@ -12,8 +12,6 @@ use interface::MemoryMapInfo;
 use limine::{MemmapEntry, MemoryMapEntryType};
 use log::{error, trace, warn};
 
-const RESERVED_AREA: u64 = 1024 * 1024;
-
 /// Reads in the memory map from the boot loader, passes the free regions to the PMM and returns the highest physical memory address.
 pub fn read_limine_memory_map(map: &MemoryMapInfo) -> u64 {
     // SAFETY: We can assume that reads from map.memory_map to map.memory_map_size are valid and the alignment is asserted.
@@ -42,7 +40,7 @@ pub fn read_limine_memory_map(map: &MemoryMapInfo) -> u64 {
             max = end;
         }
 
-        if end <= RESERVED_AREA {
+        if end <= super::RESERVED_AREA {
             continue;
         }
 
@@ -56,8 +54,8 @@ pub fn read_limine_memory_map(map: &MemoryMapInfo) -> u64 {
                     continue;
                 }
 
-                let start = if entry.base < RESERVED_AREA {
-                    RESERVED_AREA
+                let start = if entry.base < super::RESERVED_AREA {
+                    super::RESERVED_AREA
                 } else {
                     entry.base
                 };
